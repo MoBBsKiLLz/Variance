@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// NBA Teams
+model NBATeam {
+  id            Int       @id @default(autoincrement())
+  teamId        Int       @unique // Official NBA team ID
+  abbreviation  String    @unique
+  name          String
+  city          String
+  conference    String
+  division      String
+  
+  homeGames     NBAGame[] @relation("HomeTeam")
+  awayGames     NBAGame[] @relation("AwayTeam")
+  teamStats     NBATeamStats[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([abbreviation])
+}
+
+// NBA Games
+model NBAGame {
+  id                Int       @id @default(autoincrement())
+  gameId            String    @unique // Official NBA game ID
+  gameDate          DateTime
+  season            String    // e.g., "2024-25"
+  
+  homeTeamId        Int
+  awayTeamId        Int
+  
+  homeTeam          NBATeam   @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam          NBATeam   @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  
+  homeScore         Int?
+  awayScore         Int?
+  
+  status            String    // SCHEDULED, LIVE, FINAL
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([gameDate])
+  @@index([season])
+}
+
+// Team Statistics (aggregated by season)
+model NBATeamStats {
+  id                    Int       @id @default(autoincrement())
+  teamId                Int
+  team                  NBATeam   @relation(fields: [teamId], references: [id])
+  
+  season                String
+  gamesPlayed           Int
+  wins                  Int
+  losses                Int
+  
+  // Offensive Stats
+  pointsPerGame         Float
+  fieldGoalPct          Float
+  threePointPct         Float
+  freeThrowPct          Float
+  assistsPerGame        Float
+  reboundsPerGame       Float
+  turnoversPerGame      Float
+  
+  // Defensive Stats  
+  oppPointsPerGame      Float
+  oppFieldGoalPct       Float
+  oppThreePointPct      Float
+  
+  // Advanced Metrics
+  offensiveRating       Float?    // Points per 100 possessions
+  defensiveRating       Float?    // Opponent points per 100 possessions
+  pace                  Float?    // Possessions per 48 minutes
+  
+  // Meta
+  lastUpdated           DateTime  @default(now())
+  createdAt             DateTime  @default(now())
+  
+  @@unique([teamId, season])
+  @@index([season])
+}
