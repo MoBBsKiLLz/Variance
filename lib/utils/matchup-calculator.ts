@@ -141,3 +141,48 @@ export function adjustPredictionWithHistory(
     historicalContext
   };
 }
+
+/**
+ * Calculate home court advantage adjustment
+ * NBA home teams typically have a 2-3 point advantage
+ */
+export function calculateHomeCourtAdvantage(
+  team1IsHome: boolean | null,
+  team1Stats: { wins: number; losses: number },
+  team2Stats: { wins: number; losses: number }
+): {
+  adjustment: number;
+  description: string;
+} {
+  if (team1IsHome === null) {
+    return {
+      adjustment: 0,
+      description: 'Neutral court (no advantage)'
+    };
+  }
+
+  // NBA average home court advantage is about 2.5 points
+  const baseHomeAdvantage = 2.5;
+  
+  // Better teams tend to have stronger home court advantage
+  const team1WinPct = team1Stats.wins / (team1Stats.wins + team1Stats.losses);
+  const team2WinPct = team2Stats.wins / (team2Stats.wins + team2Stats.losses);
+  
+  // Scale home advantage based on team quality (better teams = stronger home court)
+  const qualityMultiplier = team1IsHome ? 
+    (0.8 + (team1WinPct * 0.4)) : 
+    (0.8 + (team2WinPct * 0.4));
+  
+  const homeAdvantage = baseHomeAdvantage * qualityMultiplier;
+  
+  const adjustment = team1IsHome ? homeAdvantage : -homeAdvantage;
+  
+  const description = team1IsHome 
+    ? `Team 1 home court advantage (+${homeAdvantage.toFixed(1)} pts)`
+    : `Team 2 home court advantage (-${homeAdvantage.toFixed(1)} pts)`;
+  
+  return {
+    adjustment,
+    description
+  };
+}

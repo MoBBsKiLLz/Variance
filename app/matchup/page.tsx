@@ -13,6 +13,7 @@ import type { Team } from "@/lib/types/team";
 import {
   calculateMatchupHistory,
   adjustPredictionWithHistory,
+  calculateHomeCourtAdvantage,
 } from "@/lib/utils/matchup-calculator";
 
 async function fetchTeams(): Promise<Team[]> {
@@ -29,6 +30,9 @@ export default function MatchupPage() {
 
   const [team1Id, setTeam1Id] = useState<string>("");
   const [team2Id, setTeam2Id] = useState<string>("");
+  const [homeTeam, setHomeTeam] = useState<"team1" | "team2" | "neutral">(
+    "neutral"
+  );
 
   const team1 = teams?.find((t) => t.id.toString() === team1Id);
   const team2 = teams?.find((t) => t.id.toString() === team2Id);
@@ -83,6 +87,18 @@ export default function MatchupPage() {
     const paceDiff =
       stats1.pace && stats2.pace ? Math.abs(stats1.pace - stats2.pace) : 0;
 
+    // After the matchup history calculation, add:
+    const homeCourtAdv = calculateHomeCourtAdvantage(
+      homeTeam === "team1" ? true : homeTeam === "team2" ? false : null,
+      { wins: stats1.wins, losses: stats1.losses },
+      { wins: stats2.wins, losses: stats2.losses }
+    );
+
+    // Update the final prediction to include home court
+    const finalNetRatingDiff =
+      (adjusted?.adjustedNetRatingDiff || baseNetRatingDiff) +
+      homeCourtAdv.adjustment;
+
     return {
       team1OffenseAdvantage,
       team2OffenseAdvantage,
@@ -90,16 +106,14 @@ export default function MatchupPage() {
       adjustedNetRatingDiff:
         adjusted?.adjustedNetRatingDiff || baseNetRatingDiff,
       adjustmentAmount: adjusted?.adjustmentAmount || 0,
+      homeCourtAdjustment: homeCourtAdv.adjustment,
+      homeCourtDescription: homeCourtAdv.description,
+      finalNetRatingDiff,
       matchupHistory,
       historicalContext: adjusted?.historicalContext || "No historical data",
       paceDiff,
-      predictedWinner:
-        (adjusted?.adjustedNetRatingDiff || baseNetRatingDiff) > 0
-          ? team1
-          : team2,
-      confidence: Math.abs(
-        adjusted?.adjustedNetRatingDiff || baseNetRatingDiff
-      ),
+      predictedWinner: finalNetRatingDiff > 0 ? team1 : team2,
+      confidence: Math.abs(finalNetRatingDiff),
     };
   };
 
@@ -111,7 +125,7 @@ export default function MatchupPage() {
         Analyze Head-to-Head Matchup
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div>
           <label className="block text-sm font-medium mb-2">Team 1</label>
           <Select value={team1Id} onValueChange={setTeam1Id}>
@@ -153,6 +167,29 @@ export default function MatchupPage() {
         </div>
       </div>
 
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium mb-2">Home Court</label>
+        <Select
+          value={homeTeam}
+          onValueChange={(value: "team1" | "team2" | "neutral") =>
+            setHomeTeam(value)
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select home team" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={5} className="max-h-75">
+            <SelectItem value="neutral">Neutral Court</SelectItem>
+            <SelectItem value="team1">
+              {team1?.abbreviation || "Team 1"} (Home)
+            </SelectItem>
+            <SelectItem value="team2">
+              {team2?.abbreviation || "Team 2"} (Home)
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {matchup && stats1 && stats2 && (
         <div className="space-y-6">
           {/* Prediction */}
@@ -164,9 +201,13 @@ export default function MatchupPage() {
               {matchup.predictedWinner?.name}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              Confidence: {matchup.confidence.toFixed(1)} point net rating
-              advantage
+              Net Rating: {matchup.finalNetRatingDiff.toFixed(1)} pts
             </p>
+            {matchup.homeCourtAdjustment !== 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {matchup.homeCourtDescription}
+              </p>
+            )}
           </div>
 
           {/* Historical Matchup Section */}
@@ -176,7 +217,7 @@ export default function MatchupPage() {
                 <h4 className="font-semibold text-foreground mb-2">
                   Season Series: {matchup.historicalContext}
                 </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   <div>
                     <span className="text-muted-foreground">Games Played:</span>
                     <div className="font-semibold">
