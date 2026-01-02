@@ -1,65 +1,302 @@
-import Image from "next/image";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useState } from "react";
+import type { Team } from "@/lib/types/team";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Header } from "@/components/header";
+
+async function fetchTeams(): Promise<Team[]> {
+  const response = await fetch("/api/teams");
+  if (!response.ok) throw new Error("Failed to fetch teams");
+  return response.json();
+}
 
 export default function Home() {
+  const {
+    data: teams,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["teams"],
+    queryFn: fetchTeams,
+  });
+  const [sortKey, setSortKey] = useState<
+    | "name"
+    | "wins"
+    | "pointsPerGame"
+    | "offensiveRating"
+    | "defensiveRating"
+    | "pace"
+    | "fieldGoalPct"
+    | "threePointPct"
+    | "reboundsPerGame"
+    | "assistsPerGame"
+    | "turnoversPerGame"
+  >("wins");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const sortedTeams = teams
+    ? [...teams].sort((a, b) => {
+        const aStats = a.teamStats[0];
+        const bStats = b.teamStats[0];
+
+        if (sortKey === "name") {
+          return sortOrder === "desc"
+            ? b.name.localeCompare(a.name)
+            : a.name.localeCompare(b.name);
+        }
+
+        let aValue: number;
+        let bValue: number;
+
+        switch (sortKey) {
+          case "wins":
+            aValue = aStats.wins;
+            bValue = bStats.wins;
+            break;
+          case "pointsPerGame":
+            aValue = aStats.pointsPerGame;
+            bValue = bStats.pointsPerGame;
+            break;
+          case "offensiveRating":
+            aValue = aStats.offensiveRating ?? 0;
+            bValue = bStats.offensiveRating ?? 0;
+            break;
+          case "defensiveRating":
+            aValue = aStats.defensiveRating ?? 0;
+            bValue = bStats.defensiveRating ?? 0;
+            break;
+          case "pace":
+            aValue = aStats.pace ?? 0;
+            bValue = bStats.pace ?? 0;
+            break;
+          case "fieldGoalPct":
+            aValue = aStats.fieldGoalPct;
+            bValue = bStats.fieldGoalPct;
+            break;
+          case "threePointPct":
+            aValue = aStats.threePointPct;
+            bValue = bStats.threePointPct;
+            break;
+          case "reboundsPerGame":
+            aValue = aStats.reboundsPerGame;
+            bValue = bStats.reboundsPerGame;
+            break;
+          case "assistsPerGame":
+            aValue = aStats.assistsPerGame;
+            bValue = bStats.assistsPerGame;
+            break;
+          case "turnoversPerGame":
+            aValue = aStats.turnoversPerGame;
+            bValue = bStats.turnoversPerGame;
+            break;
+        }
+
+        return sortOrder === "desc" ? bValue - aValue : aValue - bValue;
+      })
+    : [];
+
+  const handleSort = (key: typeof sortKey) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === "desc" ? "asc" : "desc");
+    } else {
+      setSortKey(key);
+      setSortOrder("desc");
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <Header />  
+
+        <div className="mb-4 flex gap-4 flex-wrap">
+          <Link href="/compare">
+            <Button variant="default">Compare Teams →</Button>
+          </Link>
+          <Link href="/matchup">
+            <Button variant="default">Analyze Matchup →</Button>
+          </Link>
+          <Link href="/data">
+            <Button variant="outline">Manage Data →</Button>
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="bg-card rounded-lg shadow-lg p-6 border-t-4 border-accent">
+          <h2 className="text-2xl font-semibold text-foreground mb-4">
+            Team Stats - 2025-26 Season
+          </h2>
+
+          {isLoading && (
+            <p className="text-muted-foreground">Loading teams...</p>
+          )}
+
+          {error && <p className="text-destructive">Error: {error.message}</p>}
+
+          {teams && teams.length > 0 && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead
+                      className="w-62.5 cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("name")}
+                    >
+                      Team{" "}
+                      {sortKey === "name" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("wins")}
+                    >
+                      W-L{" "}
+                      {sortKey === "wins" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("pointsPerGame")}
+                    >
+                      PPG{" "}
+                      {sortKey === "pointsPerGame" &&
+                        (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("offensiveRating")}
+                    >
+                      ORtg{" "}
+                      {sortKey === "offensiveRating" &&
+                        (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("defensiveRating")}
+                    >
+                      DRtg{" "}
+                      {sortKey === "defensiveRating" &&
+                        (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("pace")}
+                    >
+                      Pace{" "}
+                      {sortKey === "pace" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("fieldGoalPct")}
+                    >
+                      FG%{" "}
+                      {sortKey === "fieldGoalPct" &&
+                        (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("threePointPct")}
+                    >
+                      3P%{" "}
+                      {sortKey === "threePointPct" &&
+                        (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("reboundsPerGame")}
+                    >
+                      RPG{" "}
+                      {sortKey === "reboundsPerGame" &&
+                        (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("assistsPerGame")}
+                    >
+                      APG{" "}
+                      {sortKey === "assistsPerGame" &&
+                        (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleSort("turnoversPerGame")}
+                    >
+                      TOV{" "}
+                      {sortKey === "turnoversPerGame" &&
+                        (sortOrder === "desc" ? "↓" : "↑")}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedTeams.map((team) => {
+                    const stats = team.teamStats[0];
+                    return (
+                      <TableRow key={team.id}>
+                        <TableCell className="font-medium">
+                          <span className="font-semibold text-primary">
+                            {team.abbreviation}
+                          </span>
+                          <span className="text-muted-foreground ml-2">
+                            {team.name}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {stats.wins}-{stats.losses}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {stats.pointsPerGame.toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {stats.offensiveRating?.toFixed(1) || "N/A"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {stats.defensiveRating?.toFixed(1) || "N/A"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {stats.pace?.toFixed(1) || "N/A"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {(stats.fieldGoalPct * 100).toFixed(1)}%
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {(stats.threePointPct * 100).toFixed(1)}%
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {stats.reboundsPerGame.toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {stats.assistsPerGame.toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {stats.turnoversPerGame.toFixed(1)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {teams && teams.length === 0 && (
+            <p className="text-muted-foreground">
+              No teams found. Run{" "}
+              <code className="bg-muted px-2 py-1 rounded">
+                npm run fetch:nba
+              </code>{" "}
+              to import data.
+            </p>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
