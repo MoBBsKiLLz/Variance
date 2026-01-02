@@ -1,33 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { NBAStatRow, NBATeamStat, ProcessedTeamData } from '@/lib/types/nba-data';
+import { NBA_HEADERS, NBA_BASE_URL, TEAM_ABBREVIATIONS } from '@/lib/constants/nba';
+import { fetchSeasonGames } from '@/lib/data/nba-games-fetcher';
 
 const prisma = new PrismaClient();
+const teamAbbreviations = TEAM_ABBREVIATIONS as Record<number, string>;
 
 // Import the fetcher - we'll need to convert it to TypeScript or import properly
 async function fetchNBAData(season: string): Promise<ProcessedTeamData[]> {
     const axios = (await import('axios')).default;
-
-    const NBA_HEADERS = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://www.nba.com/',
-        'Origin': 'https://www.nba.com'
-    };
-
-    const NBA_BASE_URL = 'https://stats.nba.com/stats';
-
-    const TEAM_ABBREVIATIONS: Record<number, string> = {
-        1610612737: 'ATL', 1610612738: 'BOS', 1610612739: 'CLE', 1610612740: 'NOP',
-        1610612741: 'CHI', 1610612742: 'DAL', 1610612743: 'DEN', 1610612744: 'GSW',
-        1610612745: 'HOU', 1610612746: 'LAC', 1610612747: 'LAL', 1610612748: 'MIA',
-        1610612749: 'MIL', 1610612750: 'MIN', 1610612751: 'BKN', 1610612752: 'NYK',
-        1610612753: 'ORL', 1610612754: 'IND', 1610612755: 'PHI', 1610612756: 'PHX',
-        1610612757: 'POR', 1610612758: 'SAC', 1610612759: 'SAS', 1610612760: 'OKC',
-        1610612761: 'TOR', 1610612762: 'UTA', 1610612763: 'MEM', 1610612764: 'WAS',
-        1610612765: 'DET', 1610612766: 'CHA',
-    };
 
     // Fetch team stats
     const teamStatsResponse = await axios.get(`${NBA_BASE_URL}/leaguedashteamstats`, {
@@ -84,7 +66,7 @@ async function fetchNBAData(season: string): Promise<ProcessedTeamData[]> {
         const advanced = advancedStats.find((a: NBATeamStat) => a.TEAM_ID === team.TEAM_ID);
         return {
             teamId: team.TEAM_ID,
-            abbreviation: TEAM_ABBREVIATIONS[team.TEAM_ID] || 'UNK',
+            abbreviation: teamAbbreviations[team.TEAM_ID] || 'UNK',
             name: team.TEAM_NAME,
             gamesPlayed: team.GP,
             wins: team.W,
@@ -190,10 +172,56 @@ export async function POST(request: NextRequest) {
             teamsCount++;
         }
 
+        // After the team stats loop, before the return statement
+        console.log('Fetching game results...');
+        const gamesData = await fetchSeasonGames(season);
+
+        let gamesCount = 0;
+
+        for (const gameData of gamesData) {
+            const homeTeam = await prisma.nBATeam.findUnique({
+                where: { teamId: gameData.homeTeamId }
+            });
+
+            const awayTeam = await prisma.nBATeam.findUnique({
+                where: { teamId: gameData.awayTeamId }
+            });
+
+            if (!homeTeam || !awayTeam) {
+                continue;
+            }
+
+            await prisma.nBAGame.upsert({
+                where: { gameId: gameData.gameId },
+                update: {
+                    gameDate: gameData.gameDate,
+                    season: season,
+                    homeScore: gameData.homeScore,
+                    awayScore: gameData.awayScore,
+                    status: gameData.status
+                },
+                create: {
+                    gameId: gameData.gameId,
+                    gameDate: gameData.gameDate,
+                    season: season,
+                    homeTeamId: homeTeam.id,
+                    awayTeamId: awayTeam.id,
+                    homeScore: gameData.homeScore,
+                    awayScore: gameData.awayScore,
+                    status: gameData.status
+                }
+            });
+
+            gamesCount++;
+        }
+
+        console.log(`Imported ${gamesCount} games`);
+
         return NextResponse.json({
             success: true,
             season,
-            teamsCount
+            teamsCount,
+            gamesCount
         });
 
     } catch (error) {

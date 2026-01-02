@@ -12,7 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Team } from "@/lib/types/team";
-import { Header } from '@/components/header';
+import { Header } from "@/components/header";
+import {
+  calculateMatchupHistory,
+  adjustPredictionWithHistory,
+} from "@/lib/utils/matchup-calculator";
 
 async function fetchTeams(): Promise<Team[]> {
   const response = await fetch("/api/teams");
@@ -35,6 +39,19 @@ export default function MatchupPage() {
   const stats1 = team1?.teamStats[0];
   const stats2 = team2?.teamStats[0];
 
+  const { data: h2hGames } = useQuery({
+    queryKey: ["head-to-head", team1Id, team2Id],
+    queryFn: async () => {
+      if (!team1Id || !team2Id) return [];
+      const response = await fetch(
+        `/api/head-to-head?team1Id=${team1Id}&team2Id=${team2Id}&season=2025-26`
+      );
+      if (!response.ok) throw new Error("Failed to fetch head-to-head games");
+      return response.json();
+    },
+    enabled: !!team1Id && !!team2Id,
+  });
+
   // Matchup analysis calculations
   const getMatchupAdvantage = () => {
     if (
@@ -48,30 +65,44 @@ export default function MatchupPage() {
       return null;
     }
 
-    // Team 1 offense vs Team 2 defense
     const team1OffenseAdvantage =
       stats1.offensiveRating - stats2.defensiveRating;
-
-    // Team 2 offense vs Team 1 defense
     const team2OffenseAdvantage =
       stats2.offensiveRating - stats1.defensiveRating;
-
-    // Net rating difference
     const team1NetRating = stats1.offensiveRating - stats1.defensiveRating;
     const team2NetRating = stats2.offensiveRating - stats2.defensiveRating;
-    const netRatingDiff = team1NetRating - team2NetRating;
+    const baseNetRatingDiff = team1NetRating - team2NetRating;
 
-    // Pace differential
+    // Calculate matchup history
+    const matchupHistory = h2hGames
+      ? calculateMatchupHistory(parseInt(team1Id), parseInt(team2Id), h2hGames)
+      : null;
+
+    // Adjust prediction with history
+    const adjusted = matchupHistory
+      ? adjustPredictionWithHistory(baseNetRatingDiff, matchupHistory)
+      : null;
+
     const paceDiff =
       stats1.pace && stats2.pace ? Math.abs(stats1.pace - stats2.pace) : 0;
 
     return {
       team1OffenseAdvantage,
       team2OffenseAdvantage,
-      netRatingDiff,
+      baseNetRatingDiff,
+      adjustedNetRatingDiff:
+        adjusted?.adjustedNetRatingDiff || baseNetRatingDiff,
+      adjustmentAmount: adjusted?.adjustmentAmount || 0,
+      matchupHistory,
+      historicalContext: adjusted?.historicalContext || "No historical data",
       paceDiff,
-      predictedWinner: netRatingDiff > 0 ? team1 : team2,
-      confidence: Math.abs(netRatingDiff),
+      predictedWinner:
+        (adjusted?.adjustedNetRatingDiff || baseNetRatingDiff) > 0
+          ? team1
+          : team2,
+      confidence: Math.abs(
+        adjusted?.adjustedNetRatingDiff || baseNetRatingDiff
+      ),
     };
   };
 
@@ -144,6 +175,67 @@ export default function MatchupPage() {
                   advantage
                 </p>
               </div>
+
+              {/* Historical Matchup Section */}
+              {matchup?.matchupHistory &&
+                matchup.matchupHistory.gamesPlayed > 0 && (
+                  <div className="bg-card border rounded-lg p-4">
+                    <h4 className="font-semibold text-foreground mb-2">
+                      Season Series: {matchup.historicalContext}
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">
+                          Games Played:
+                        </span>
+                        <div className="font-semibold">
+                          {matchup.matchupHistory.gamesPlayed}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Record:</span>
+                        <div className="font-semibold">
+                          {matchup.matchupHistory.team1Wins}-
+                          {matchup.matchupHistory.team2Wins}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">
+                          Avg Point Diff:
+                        </span>
+                        <div
+                          className={`font-semibold ${
+                            matchup.matchupHistory.avgPointDifferential > 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {matchup.matchupHistory.avgPointDifferential > 0
+                            ? "+"
+                            : ""}
+                          {matchup.matchupHistory.avgPointDifferential.toFixed(
+                            1
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">
+                          Adjustment:
+                        </span>
+                        <div
+                          className={`font-semibold ${
+                            matchup.adjustmentAmount > 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {matchup.adjustmentAmount > 0 ? "+" : ""}
+                          {matchup.adjustmentAmount.toFixed(1)} pts
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               {/* Detailed Analysis */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

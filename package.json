@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "fetch:nba": "node scripts/fetch-nba-data.js"
+    "fetch:nba": "node scripts/fetch-nba-data.js",
+    "fetch:nba-games": "node scripts/fetch-nba-games.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

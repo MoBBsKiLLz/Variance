@@ -13,6 +13,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Loader2, Download, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { getSeasonOptions } from "@/lib/constants/nba";
 
 export default function DataPage() {
   const [selectedSeason, setSelectedSeason] = useState<string>("2025-26");
@@ -20,14 +21,7 @@ export default function DataPage() {
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [message, setMessage] = useState<string>("");
 
-  // Generate season options (current year and past 5 years)
-  const currentYear = new Date().getFullYear();
-  const seasons = [];
-  for (let i = 0; i < 6; i++) {
-    const startYear = currentYear - i;
-    const endYear = startYear + 1;
-    seasons.push(`${startYear}-${endYear.toString().slice(-2)}`);
-  }
+  const seasons = getSeasonOptions();
 
   const handleFetchData = async () => {
     setIsLoading(true);
@@ -51,7 +45,7 @@ export default function DataPage() {
 
       setStatus("success");
       setMessage(
-        `Successfully imported ${data.teamsCount} teams for ${selectedSeason} season`
+        `Successfully imported ${data.teamsCount} teams and ${data.gamesCount} games for ${selectedSeason} season`
       );
     } catch (error) {
       setStatus("error");
