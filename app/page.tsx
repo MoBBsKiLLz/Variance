@@ -11,9 +11,6 @@ import {
 } from "@/components/ui/table";
 import { useState } from "react";
 import type { Team } from "@/lib/types/team";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Header } from "@/components/header";
 
 async function fetchTeams(): Promise<Team[]> {
   const response = await fetch("/api/teams");
@@ -116,187 +113,164 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <Header />  
+    <div className="bg-card rounded-lg shadow-lg p-6 border-t-4 border-accent">
+      <h2 className="text-2xl font-semibold text-foreground mb-4">
+        Team Stats - 2025-26 Season
+      </h2>
 
-        <div className="mb-4 flex gap-4 flex-wrap">
-          <Link href="/compare">
-            <Button variant="default">Compare Teams →</Button>
-          </Link>
-          <Link href="/matchup">
-            <Button variant="default">Analyze Matchup →</Button>
-          </Link>
-          <Link href="/data">
-            <Button variant="outline">Manage Data →</Button>
-          </Link>
-        </div>
+      {isLoading && <p className="text-muted-foreground">Loading teams...</p>}
 
-        <div className="bg-card rounded-lg shadow-lg p-6 border-t-4 border-accent">
-          <h2 className="text-2xl font-semibold text-foreground mb-4">
-            Team Stats - 2025-26 Season
-          </h2>
+      {error && <p className="text-destructive">Error: {error.message}</p>}
 
-          {isLoading && (
-            <p className="text-muted-foreground">Loading teams...</p>
-          )}
-
-          {error && <p className="text-destructive">Error: {error.message}</p>}
-
-          {teams && teams.length > 0 && (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead
-                      className="w-62.5 cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("name")}
-                    >
-                      Team{" "}
-                      {sortKey === "name" && (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("wins")}
-                    >
-                      W-L{" "}
-                      {sortKey === "wins" && (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("pointsPerGame")}
-                    >
-                      PPG{" "}
-                      {sortKey === "pointsPerGame" &&
-                        (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("offensiveRating")}
-                    >
-                      ORtg{" "}
-                      {sortKey === "offensiveRating" &&
-                        (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("defensiveRating")}
-                    >
-                      DRtg{" "}
-                      {sortKey === "defensiveRating" &&
-                        (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("pace")}
-                    >
-                      Pace{" "}
-                      {sortKey === "pace" && (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("fieldGoalPct")}
-                    >
-                      FG%{" "}
-                      {sortKey === "fieldGoalPct" &&
-                        (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("threePointPct")}
-                    >
-                      3P%{" "}
-                      {sortKey === "threePointPct" &&
-                        (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("reboundsPerGame")}
-                    >
-                      RPG{" "}
-                      {sortKey === "reboundsPerGame" &&
-                        (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("assistsPerGame")}
-                    >
-                      APG{" "}
-                      {sortKey === "assistsPerGame" &&
-                        (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
-                    <TableHead
-                      className="text-center cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleSort("turnoversPerGame")}
-                    >
-                      TOV{" "}
-                      {sortKey === "turnoversPerGame" &&
-                        (sortOrder === "desc" ? "↓" : "↑")}
-                    </TableHead>
+      {teams && teams.length > 0 && (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  className="w-62.5 cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("name")}
+                >
+                  Team{" "}
+                  {sortKey === "name" && (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("wins")}
+                >
+                  W-L {sortKey === "wins" && (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("pointsPerGame")}
+                >
+                  PPG{" "}
+                  {sortKey === "pointsPerGame" &&
+                    (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("offensiveRating")}
+                >
+                  ORtg{" "}
+                  {sortKey === "offensiveRating" &&
+                    (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("defensiveRating")}
+                >
+                  DRtg{" "}
+                  {sortKey === "defensiveRating" &&
+                    (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("pace")}
+                >
+                  Pace{" "}
+                  {sortKey === "pace" && (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("fieldGoalPct")}
+                >
+                  FG%{" "}
+                  {sortKey === "fieldGoalPct" &&
+                    (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("threePointPct")}
+                >
+                  3P%{" "}
+                  {sortKey === "threePointPct" &&
+                    (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("reboundsPerGame")}
+                >
+                  RPG{" "}
+                  {sortKey === "reboundsPerGame" &&
+                    (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("assistsPerGame")}
+                >
+                  APG{" "}
+                  {sortKey === "assistsPerGame" &&
+                    (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+                <TableHead
+                  className="text-center cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleSort("turnoversPerGame")}
+                >
+                  TOV{" "}
+                  {sortKey === "turnoversPerGame" &&
+                    (sortOrder === "desc" ? "↓" : "↑")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedTeams.map((team) => {
+                const stats = team.teamStats[0];
+                return (
+                  <TableRow key={team.id}>
+                    <TableCell className="font-medium">
+                      <span className="font-semibold text-primary">
+                        {team.abbreviation}
+                      </span>
+                      <span className="text-muted-foreground ml-2">
+                        {team.name}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {stats.wins}-{stats.losses}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {stats.pointsPerGame.toFixed(1)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {stats.offensiveRating?.toFixed(1) || "N/A"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {stats.defensiveRating?.toFixed(1) || "N/A"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {stats.pace?.toFixed(1) || "N/A"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {(stats.fieldGoalPct * 100).toFixed(1)}%
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {(stats.threePointPct * 100).toFixed(1)}%
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {stats.reboundsPerGame.toFixed(1)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {stats.assistsPerGame.toFixed(1)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {stats.turnoversPerGame.toFixed(1)}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedTeams.map((team) => {
-                    const stats = team.teamStats[0];
-                    return (
-                      <TableRow key={team.id}>
-                        <TableCell className="font-medium">
-                          <span className="font-semibold text-primary">
-                            {team.abbreviation}
-                          </span>
-                          <span className="text-muted-foreground ml-2">
-                            {team.name}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {stats.wins}-{stats.losses}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {stats.pointsPerGame.toFixed(1)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {stats.offensiveRating?.toFixed(1) || "N/A"}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {stats.defensiveRating?.toFixed(1) || "N/A"}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {stats.pace?.toFixed(1) || "N/A"}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {(stats.fieldGoalPct * 100).toFixed(1)}%
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {(stats.threePointPct * 100).toFixed(1)}%
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {stats.reboundsPerGame.toFixed(1)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {stats.assistsPerGame.toFixed(1)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {stats.turnoversPerGame.toFixed(1)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {teams && teams.length === 0 && (
-            <p className="text-muted-foreground">
-              No teams found. Run{" "}
-              <code className="bg-muted px-2 py-1 rounded">
-                npm run fetch:nba
-              </code>{" "}
-              to import data.
-            </p>
-          )}
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      )}
+
+      {teams && teams.length === 0 && (
+        <p className="text-muted-foreground">
+          No teams found. Run{" "}
+          <code className="bg-muted px-2 py-1 rounded">npm run fetch:nba</code>{" "}
+          to import data.
+        </p>
+      )}
     </div>
   );
 }
