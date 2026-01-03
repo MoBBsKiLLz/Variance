@@ -132,8 +132,7 @@ export default function Home() {
       if (!response.ok) throw new Error("Failed to fetch games");
       return response.json();
     },
-    refetchInterval: 30000,
-    enabled: process.env.NODE_ENV === "development",
+    staleTime: 5 * 60 * 1000
   });
 
   // Add this useEffect in app/page.tsx
@@ -169,10 +168,12 @@ export default function Home() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold text-foreground">
                 Today&apos;s Games{" "}
-                {todaysGames.length > 0 && `(${todaysGames.length})`}
+                {todaysGames &&
+                  todaysGames.length > 0 &&
+                  `(${todaysGames.length})`}
               </h2>
               <span className="text-xs text-muted-foreground">
-                Scores shown when final
+                Scores shown when games end • Update data via Manage Data
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
