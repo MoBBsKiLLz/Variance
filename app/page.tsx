@@ -129,23 +129,22 @@ export default function Home() {
       {/* Today's Games Section */}
       {todaysGames && todaysGames.length > 0 && (
         <Card className="p-6 border-t-4 border-accent mb-6">
-          <h2 className="text-2xl font-semibold text-foreground mb-4">
-            Today&apos;s Games{" "}
-            {todaysGames.length > 0 && `(${todaysGames.length})`}
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold text-foreground">
+              Today&apos;s Games{" "}
+              {todaysGames.length > 0 && `(${todaysGames.length})`}
+            </h2>
+            <span className="text-xs text-muted-foreground">
+              Scores shown when final
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {todaysGames.map((game: TodaysGame) => {
-              const isLive =
-                !game.status.toLowerCase().includes("pm") &&
-                !game.status.toLowerCase().includes("am") &&
-                !game.gameTime.toLowerCase().includes("pm") &&
-                !game.gameTime.toLowerCase().includes("am");
-
               return (
                 <Card
                   key={game.gameId}
                   className={`p-4 hover:shadow-md transition-shadow ${
-                    isLive ? "border-l-4 border-l-accent" : ""
+                    game.isFinal ? "border-l-4 border-l-green-500" : ""
                   }`}
                 >
                   <div className="flex flex-col gap-3">
@@ -159,7 +158,7 @@ export default function Home() {
                           {game.awayTeam?.name}
                         </span>
                       </div>
-                      {game.awayScore !== null && (
+                      {game.isFinal && game.awayScore !== null && (
                         <span className="text-2xl font-bold ml-2">
                           {game.awayScore}
                         </span>
@@ -176,7 +175,7 @@ export default function Home() {
                           {game.homeTeam?.name}
                         </span>
                       </div>
-                      {game.homeScore !== null && (
+                      {game.isFinal && game.homeScore !== null && (
                         <span className="text-2xl font-bold ml-2">
                           {game.homeScore}
                         </span>
@@ -191,8 +190,7 @@ export default function Home() {
                           day: "numeric",
                           timeZone: "UTC",
                         })}{" "}
-                        • {isLive && "🔴 "}
-                        {game.gameTime}
+                        • {game.isFinal ? "✅ Final" : game.gameTime}
                       </span>
                     </div>
                   </div>

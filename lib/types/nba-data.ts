@@ -15,7 +15,7 @@ export type NBAStatRow = [
   defensiveRating?: number,
   pace?: number
 ];
- // NBA API returns arrays
+// NBA API returns arrays
 
 export type NBATeamStat = {
   TEAM_ID: number;
@@ -106,4 +106,5 @@ export type TodaysGame = {
   awayScore: number | null;
   status: string;
   gameTime: string;
+  isFinal: boolean;
 };
