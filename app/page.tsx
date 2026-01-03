@@ -133,6 +133,7 @@ export default function Home() {
       return response.json();
     },
     refetchInterval: 30000,
+    enabled: process.env.NODE_ENV === "development",
   });
 
   // Add this useEffect in app/page.tsx
