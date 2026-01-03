@@ -7,9 +7,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "test:db": "node scripts/test-db.js",
     "fetch:nba": "node scripts/fetch-nba-data.js",
-    "fetch:nba-games": "node scripts/fetch-nba-games.js"
+    "fetch:nba-games": "node scripts/fetch-nba-games.js",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
