@@ -21,3 +21,26 @@ export type Team = {
   city: string;
   teamStats: TeamStats[];
 };
+
+export type ProgressionData = {
+  date: Date;
+  gameNumber: number;
+  wins: number;
+  losses: number;
+  winPct: number;
+  avgPointsScored: number;
+  avgPointsAllowed: number;
+  pointDifferential: number;
+  result: 'W' | 'L';
+};
+
+export type RecentForm = {
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
+  winPct: number;
+  avgPointsScored: number;
+  avgPointsAllowed: number;
+  recentOffensiveRating: number | null;
+  recentDefensiveRating: number | null;
+};

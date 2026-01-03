@@ -10,7 +10,7 @@
   --color-tiger-orange: var(--tiger-orange);
   --color-sandy-brown: var(--sandy-brown);
   --color-ghost-white: var(--ghost-white);
-  
+
   /* Standard theme colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -56,14 +56,14 @@
 
 :root {
   --radius: 0.625rem;
-  
+
   /* Variance Color Palette */
   --lavender-grey: oklch(0.68 0.05 260);
   --steel-azure: oklch(0.35 0.12 250);
   --tiger-orange: oklch(0.70 0.18 50);
   --sandy-brown: oklch(0.78 0.13 60);
   --ghost-white: oklch(0.98 0.01 280);
-  
+
   /* Theme tokens using Variance palette */
   --background: oklch(0.98 0.01 280); /* ghost-white */
   --foreground: oklch(0.35 0.12 250); /* steel-azure */
@@ -83,14 +83,14 @@
   --border: oklch(0.68 0.05 260);
   --input: oklch(0.68 0.05 260);
   --ring: oklch(0.35 0.12 250);
-  
+
   /* Chart colors using your palette */
   --chart-1: oklch(0.35 0.12 250); /* steel-azure */
   --chart-2: oklch(0.70 0.18 50); /* tiger-orange */
   --chart-3: oklch(0.78 0.13 60); /* sandy-brown */
   --chart-4: oklch(0.68 0.05 260); /* lavender-grey */
   --chart-5: oklch(0.98 0.01 280); /* ghost-white */
-  
+
   --sidebar: oklch(0.98 0.01 280);
   --sidebar-foreground: oklch(0.35 0.12 250);
   --sidebar-primary: oklch(0.35 0.12 250);
@@ -108,7 +108,7 @@
   --tiger-orange: oklch(0.75 0.16 50);
   --sandy-brown: oklch(0.80 0.11 60);
   --ghost-white: oklch(0.20 0.01 280);
-  
+
   /* Theme tokens for dark mode */
   --background: oklch(0.18 0.02 260);
   --foreground: oklch(0.95 0.01 280);
@@ -128,14 +128,14 @@
   --border: oklch(0.35 0.03 260);
   --input: oklch(0.35 0.03 260);
   --ring: oklch(0.60 0.10 250);
-  
+
   /* Charts in dark mode */
   --chart-1: oklch(0.60 0.10 250);
   --chart-2: oklch(0.75 0.16 50);
   --chart-3: oklch(0.80 0.11 60);
   --chart-4: oklch(0.75 0.04 260);
   --chart-5: oklch(0.40 0.03 260);
-  
+
   /* Sidebar dark mode */
   --sidebar: oklch(0.22 0.02 260);
   --sidebar-foreground: oklch(0.95 0.01 280);
