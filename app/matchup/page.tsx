@@ -20,11 +20,7 @@ import {
   getFormDescription,
 } from "@/lib/utils/weighted-prediction";
 import { useSearchParams } from "next/navigation";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 
 async function fetchTeams(): Promise<Team[]> {
@@ -33,7 +29,7 @@ async function fetchTeams(): Promise<Team[]> {
   return response.json();
 }
 
-export default function MatchupPage() {
+function MatchupContent() {
   const { data: teams } = useQuery({
     queryKey: ["teams"],
     queryFn: fetchTeams,
@@ -199,405 +195,397 @@ export default function MatchupPage() {
   const matchup = getMatchupAdvantage();
 
   return (
-    <Suspense fallback={<div className="p-8">Loading...</div>}>
-      <div className="bg-card rounded-lg shadow-lg p-6 border-t-4 border-accent mb-6">
-        <h2 className="text-2xl font-semibold text-foreground mb-6">
-          Analyze Head-to-Head Matchup
-        </h2>
+    <div className="bg-card rounded-lg shadow-lg p-6 border-t-4 border-accent mb-6">
+      <h2 className="text-2xl font-semibold text-foreground mb-6">
+        Analyze Head-to-Head Matchup
+      </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div>
-            <label className="block text-sm font-medium mb-2">Team 1</label>
-            <Select value={team1Id} onValueChange={setTeam1Id}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select first team" />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                sideOffset={5}
-                className="max-h-75"
-              >
-                {teams?.map((team) => (
-                  <SelectItem key={team.id} value={team.id.toString()}>
-                    {team.abbreviation} - {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Team 2</label>
-            <Select value={team2Id} onValueChange={setTeam2Id}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select second team" />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                sideOffset={5}
-                className="max-h-75"
-              >
-                {teams?.map((team) => (
-                  <SelectItem key={team.id} value={team.id.toString()}>
-                    {team.abbreviation} - {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="md:col-span-2 mb-6">
-          <label className="block text-sm font-medium mb-2">Home Court</label>
-          <Select
-            value={homeTeam}
-            onValueChange={(value: "team1" | "team2" | "neutral") =>
-              setHomeTeam(value)
-            }
-          >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div>
+          <label className="block text-sm font-medium mb-2">Team 1</label>
+          <Select value={team1Id} onValueChange={setTeam1Id}>
             <SelectTrigger>
-              <SelectValue placeholder="Select home team" />
+              <SelectValue placeholder="Select first team" />
             </SelectTrigger>
             <SelectContent
               position="popper"
               sideOffset={5}
               className="max-h-75"
             >
-              <SelectItem value="neutral">Neutral Court</SelectItem>
-              <SelectItem value="team1">
-                {team1?.abbreviation || "Team 1"} (Home)
-              </SelectItem>
-              <SelectItem value="team2">
-                {team2?.abbreviation || "Team 2"} (Home)
-              </SelectItem>
+              {teams?.map((team) => (
+                <SelectItem key={team.id} value={team.id.toString()}>
+                  {team.abbreviation} - {team.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
-        {matchup && stats1 && stats2 && (
-          <div className="space-y-6">
-            {/* Prediction */}
-            <div className="bg-muted p-6 rounded-lg text-center">
-              <h3 className="text-lg font-semibold text-muted-foreground mb-2 flex items-center justify-center gap-2">
-                Predicted Winner
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="text-sm">
-                      Prediction based on net rating difference (Offensive
-                      Rating - Defensive Rating). Higher is better. Even
-                      negative numbers can win if opponent is worse.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </h3>
-              <p className="text-3xl font-bold text-primary">
-                {matchup.predictedWinner?.name}
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Net Rating: {matchup.finalNetRatingDiff.toFixed(1)} pts
-                {matchup.finalNetRatingDiff > 0
-                  ? " advantage"
-                  : matchup.finalNetRatingDiff < 0
-                  ? " (less negative)"
-                  : ""}
-              </p>
-              {/* Add confidence level context */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Team 2</label>
+          <Select value={team2Id} onValueChange={setTeam2Id}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select second team" />
+            </SelectTrigger>
+            <SelectContent
+              position="popper"
+              sideOffset={5}
+              className="max-h-75"
+            >
+              {teams?.map((team) => (
+                <SelectItem key={team.id} value={team.id.toString()}>
+                  {team.abbreviation} - {team.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="md:col-span-2 mb-6">
+        <label className="block text-sm font-medium mb-2">Home Court</label>
+        <Select
+          value={homeTeam}
+          onValueChange={(value: "team1" | "team2" | "neutral") =>
+            setHomeTeam(value)
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select home team" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={5} className="max-h-75">
+            <SelectItem value="neutral">Neutral Court</SelectItem>
+            <SelectItem value="team1">
+              {team1?.abbreviation || "Team 1"} (Home)
+            </SelectItem>
+            <SelectItem value="team2">
+              {team2?.abbreviation || "Team 2"} (Home)
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {matchup && stats1 && stats2 && (
+        <div className="space-y-6">
+          {/* Prediction */}
+          <div className="bg-muted p-6 rounded-lg text-center">
+            <h3 className="text-lg font-semibold text-muted-foreground mb-2 flex items-center justify-center gap-2">
+              Predicted Winner
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">
+                    Prediction based on net rating difference (Offensive Rating
+                    - Defensive Rating). Higher is better. Even negative numbers
+                    can win if opponent is worse.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </h3>
+            <p className="text-3xl font-bold text-primary">
+              {matchup.predictedWinner?.name}
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Net Rating: {matchup.finalNetRatingDiff.toFixed(1)} pts
+              {matchup.finalNetRatingDiff > 0
+                ? " advantage"
+                : matchup.finalNetRatingDiff < 0
+                ? " (less negative)"
+                : ""}
+            </p>
+            {/* Add confidence level context */}
+            <p className="text-xs text-muted-foreground mt-1">
+              {Math.abs(matchup.finalNetRatingDiff) >= 10 &&
+                "🔥 High confidence"}
+              {Math.abs(matchup.finalNetRatingDiff) >= 5 &&
+                Math.abs(matchup.finalNetRatingDiff) < 10 &&
+                "✓ Strong advantage"}
+              {Math.abs(matchup.finalNetRatingDiff) >= 2 &&
+                Math.abs(matchup.finalNetRatingDiff) < 5 &&
+                "⚡ Moderate edge"}
+              {Math.abs(matchup.finalNetRatingDiff) < 2 &&
+                "🤝 Close game - Toss-up"}
+            </p>
+            {matchup.homeCourtAdjustment !== 0 && (
               <p className="text-xs text-muted-foreground mt-1">
-                {Math.abs(matchup.finalNetRatingDiff) >= 10 &&
-                  "🔥 High confidence"}
-                {Math.abs(matchup.finalNetRatingDiff) >= 5 &&
-                  Math.abs(matchup.finalNetRatingDiff) < 10 &&
-                  "✓ Strong advantage"}
-                {Math.abs(matchup.finalNetRatingDiff) >= 2 &&
-                  Math.abs(matchup.finalNetRatingDiff) < 5 &&
-                  "⚡ Moderate edge"}
-                {Math.abs(matchup.finalNetRatingDiff) < 2 &&
-                  "🤝 Close game - Toss-up"}
+                {matchup.homeCourtDescription}
               </p>
-              {matchup.homeCourtAdjustment !== 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {matchup.homeCourtDescription}
-                </p>
-              )}
-            </div>
-
-            {/* Recent Form Section */}
-            {matchup && (team1RecentForm || team2RecentForm) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {team1RecentForm && (
-                  <div className="bg-card border rounded-lg p-4">
-                    <h4 className="font-semibold text-foreground mb-2">
-                      {team1?.abbreviation} Recent Form
-                    </h4>
-                    <p className="text-sm mb-2">
-                      {matchup.team1FormDescription}
-                    </p>
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <div>
-                        Avg: {team1RecentForm.avgPointsScored.toFixed(1)} pts
-                        scored, {team1RecentForm.avgPointsAllowed.toFixed(1)}{" "}
-                        allowed
-                      </div>
-                      {team1RecentForm.recentOffensiveRating && (
-                        <div>
-                          ORtg:{" "}
-                          {team1RecentForm.recentOffensiveRating.toFixed(1)} |
-                          DRtg:{" "}
-                          {team1RecentForm.recentDefensiveRating?.toFixed(1)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {team2RecentForm && (
-                  <div className="bg-card border rounded-lg p-4">
-                    <h4 className="font-semibold text-foreground mb-2">
-                      {team2?.abbreviation} Recent Form
-                    </h4>
-                    <p className="text-sm mb-2">
-                      {matchup.team2FormDescription}
-                    </p>
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <div>
-                        Avg: {team2RecentForm.avgPointsScored.toFixed(1)} pts
-                        scored, {team2RecentForm.avgPointsAllowed.toFixed(1)}{" "}
-                        allowed
-                      </div>
-                      {team2RecentForm.recentOffensiveRating && (
-                        <div>
-                          ORtg:{" "}
-                          {team2RecentForm.recentOffensiveRating.toFixed(1)} |
-                          DRtg:{" "}
-                          {team2RecentForm.recentDefensiveRating?.toFixed(1)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
             )}
+          </div>
 
-            {/* Historical Matchup Section */}
-            {matchup?.matchupHistory &&
-              matchup.matchupHistory.gamesPlayed > 0 && (
+          {/* Recent Form Section */}
+          {matchup && (team1RecentForm || team2RecentForm) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {team1RecentForm && (
                 <div className="bg-card border rounded-lg p-4">
                   <h4 className="font-semibold text-foreground mb-2">
-                    Season Series: {matchup.historicalContext}
+                    {team1?.abbreviation} Recent Form
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <p className="text-sm mb-2">{matchup.team1FormDescription}</p>
+                  <div className="text-xs text-muted-foreground space-y-1">
                     <div>
-                      <span className="text-muted-foreground">
-                        Games Played:
-                      </span>
-                      <div className="font-semibold">
-                        {matchup.matchupHistory.gamesPlayed}
-                      </div>
+                      Avg: {team1RecentForm.avgPointsScored.toFixed(1)} pts
+                      scored, {team1RecentForm.avgPointsAllowed.toFixed(1)}{" "}
+                      allowed
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Record:</span>
-                      <div className="font-semibold">
-                        {matchup.matchupHistory.team1Wins}-
-                        {matchup.matchupHistory.team2Wins}
+                    {team1RecentForm.recentOffensiveRating && (
+                      <div>
+                        ORtg: {team1RecentForm.recentOffensiveRating.toFixed(1)}{" "}
+                        | DRtg:{" "}
+                        {team1RecentForm.recentDefensiveRating?.toFixed(1)}
                       </div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">
-                        Avg Point Diff:
-                      </span>
-                      <div
-                        className={`font-semibold ${
-                          matchup.matchupHistory.avgPointDifferential > 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {matchup.matchupHistory.avgPointDifferential > 0
-                          ? "+"
-                          : ""}
-                        {matchup.matchupHistory.avgPointDifferential.toFixed(1)}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Adjustment:</span>
-                      <div
-                        className={`font-semibold ${
-                          matchup.adjustmentAmount > 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {matchup.adjustmentAmount > 0 ? "+" : ""}
-                        {matchup.adjustmentAmount.toFixed(1)} pts
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
 
-            {/* Detailed Analysis */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Offensive Matchups */}
-              <div className="bg-card border rounded-lg p-4">
-                <h4 className="font-semibold text-foreground mb-4">
-                  Offensive Matchups
-                </h4>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">
-                        {team1?.abbreviation} Offense vs {team2?.abbreviation}{" "}
-                        Defense
-                      </span>
-                      <span
-                        className={
-                          matchup.team1OffenseAdvantage > 0
-                            ? "text-green-600 font-semibold"
-                            : "text-red-600 font-semibold"
-                        }
-                      >
-                        {matchup.team1OffenseAdvantage > 0 ? "+" : ""}
-                        {matchup.team1OffenseAdvantage.toFixed(1)}
-                      </span>
+              {team2RecentForm && (
+                <div className="bg-card border rounded-lg p-4">
+                  <h4 className="font-semibold text-foreground mb-2">
+                    {team2?.abbreviation} Recent Form
+                  </h4>
+                  <p className="text-sm mb-2">{matchup.team2FormDescription}</p>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div>
+                      Avg: {team2RecentForm.avgPointsScored.toFixed(1)} pts
+                      scored, {team2RecentForm.avgPointsAllowed.toFixed(1)}{" "}
+                      allowed
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats1.offensiveRating?.toFixed(1)} ORtg vs{" "}
-                      {stats2.defensiveRating?.toFixed(1)} DRtg
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">
-                        {team2?.abbreviation} Offense vs {team1?.abbreviation}{" "}
-                        Defense
-                      </span>
-                      <span
-                        className={
-                          matchup.team2OffenseAdvantage > 0
-                            ? "text-green-600 font-semibold"
-                            : "text-red-600 font-semibold"
-                        }
-                      >
-                        {matchup.team2OffenseAdvantage > 0 ? "+" : ""}
-                        {matchup.team2OffenseAdvantage.toFixed(1)}
-                      </span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats2.offensiveRating?.toFixed(1)} ORtg vs{" "}
-                      {stats1.defensiveRating?.toFixed(1)} DRtg
-                    </div>
+                    {team2RecentForm.recentOffensiveRating && (
+                      <div>
+                        ORtg: {team2RecentForm.recentOffensiveRating.toFixed(1)}{" "}
+                        | DRtg:{" "}
+                        {team2RecentForm.recentDefensiveRating?.toFixed(1)}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-
-              {/* Team Ratings */}
-              <div className="bg-card border rounded-lg p-4">
-                <h4 className="font-semibold text-foreground mb-4">
-                  Net Ratings
-                </h4>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">
-                        {team1?.abbreviation} Net Rating
-                      </span>
-                      <span className="font-semibold">
-                        {stats1.offensiveRating && stats1.defensiveRating
-                          ? (
-                              stats1.offensiveRating - stats1.defensiveRating
-                            ).toFixed(1)
-                          : "N/A"}
-                      </span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats1.offensiveRating?.toFixed(1)} ORtg -{" "}
-                      {stats1.defensiveRating?.toFixed(1)} DRtg
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">
-                        {team2?.abbreviation} Net Rating
-                      </span>
-                      <span className="font-semibold">
-                        {stats2.offensiveRating && stats2.defensiveRating
-                          ? (
-                              stats2.offensiveRating - stats2.defensiveRating
-                            ).toFixed(1)
-                          : "N/A"}
-                      </span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats2.offensiveRating?.toFixed(1)} ORtg -{" "}
-                      {stats2.defensiveRating?.toFixed(1)} DRtg
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
+          )}
 
-            {/* Pace Analysis */}
-            {stats1.pace && stats2.pace && (
+          {/* Historical Matchup Section */}
+          {matchup?.matchupHistory &&
+            matchup.matchupHistory.gamesPlayed > 0 && (
               <div className="bg-card border rounded-lg p-4">
                 <h4 className="font-semibold text-foreground mb-2">
-                  Pace Analysis
+                  Season Series: {matchup.historicalContext}
                 </h4>
-                <p className="text-sm text-muted-foreground">
-                  {team1?.abbreviation}: {stats1.pace.toFixed(1)}{" "}
-                  possessions/game | {team2?.abbreviation}:{" "}
-                  {stats2.pace.toFixed(1)} possessions/game
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Pace differential: {matchup.paceDiff.toFixed(1)} possessions
-                  {matchup.paceDiff > 2 &&
-                    " (Significant difference - expect pace to favor faster team)"}
-                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div>
+                    <span className="text-muted-foreground">Games Played:</span>
+                    <div className="font-semibold">
+                      {matchup.matchupHistory.gamesPlayed}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Record:</span>
+                    <div className="font-semibold">
+                      {matchup.matchupHistory.team1Wins}-
+                      {matchup.matchupHistory.team2Wins}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">
+                      Avg Point Diff:
+                    </span>
+                    <div
+                      className={`font-semibold ${
+                        matchup.matchupHistory.avgPointDifferential > 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {matchup.matchupHistory.avgPointDifferential > 0
+                        ? "+"
+                        : ""}
+                      {matchup.matchupHistory.avgPointDifferential.toFixed(1)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Adjustment:</span>
+                    <div
+                      className={`font-semibold ${
+                        matchup.adjustmentAmount > 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {matchup.adjustmentAmount > 0 ? "+" : ""}
+                      {matchup.adjustmentAmount.toFixed(1)} pts
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Key Insights */}
-            <div className="bg-muted p-4 rounded-lg">
-              <h4 className="font-semibold text-foreground mb-2">
-                Key Insights
+          {/* Detailed Analysis */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Offensive Matchups */}
+            <div className="bg-card border rounded-lg p-4">
+              <h4 className="font-semibold text-foreground mb-4">
+                Offensive Matchups
               </h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>
-                  •{" "}
-                  {matchup.team1OffenseAdvantage > matchup.team2OffenseAdvantage
-                    ? `${team1?.abbreviation} has the better offensive matchup advantage`
-                    : `${team2?.abbreviation} has the better offensive matchup advantage`}
-                </li>
-                <li>
-                  • Net rating favors {matchup.predictedWinner?.abbreviation} by{" "}
-                  {matchup.confidence.toFixed(1)} points
-                </li>
-                {stats1.pace && stats2.pace && matchup.paceDiff > 2 && (
-                  <li>
-                    • Pace advantage to{" "}
-                    {stats1.pace > stats2.pace
-                      ? team1?.abbreviation
-                      : team2?.abbreviation}{" "}
-                    (faster tempo)
-                  </li>
-                )}
-              </ul>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">
+                      {team1?.abbreviation} Offense vs {team2?.abbreviation}{" "}
+                      Defense
+                    </span>
+                    <span
+                      className={
+                        matchup.team1OffenseAdvantage > 0
+                          ? "text-green-600 font-semibold"
+                          : "text-red-600 font-semibold"
+                      }
+                    >
+                      {matchup.team1OffenseAdvantage > 0 ? "+" : ""}
+                      {matchup.team1OffenseAdvantage.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {stats1.offensiveRating?.toFixed(1)} ORtg vs{" "}
+                    {stats2.defensiveRating?.toFixed(1)} DRtg
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">
+                      {team2?.abbreviation} Offense vs {team1?.abbreviation}{" "}
+                      Defense
+                    </span>
+                    <span
+                      className={
+                        matchup.team2OffenseAdvantage > 0
+                          ? "text-green-600 font-semibold"
+                          : "text-red-600 font-semibold"
+                      }
+                    >
+                      {matchup.team2OffenseAdvantage > 0 ? "+" : ""}
+                      {matchup.team2OffenseAdvantage.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {stats2.offensiveRating?.toFixed(1)} ORtg vs{" "}
+                    {stats1.defensiveRating?.toFixed(1)} DRtg
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Team Ratings */}
+            <div className="bg-card border rounded-lg p-4">
+              <h4 className="font-semibold text-foreground mb-4">
+                Net Ratings
+              </h4>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">
+                      {team1?.abbreviation} Net Rating
+                    </span>
+                    <span className="font-semibold">
+                      {stats1.offensiveRating && stats1.defensiveRating
+                        ? (
+                            stats1.offensiveRating - stats1.defensiveRating
+                          ).toFixed(1)
+                        : "N/A"}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {stats1.offensiveRating?.toFixed(1)} ORtg -{" "}
+                    {stats1.defensiveRating?.toFixed(1)} DRtg
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">
+                      {team2?.abbreviation} Net Rating
+                    </span>
+                    <span className="font-semibold">
+                      {stats2.offensiveRating && stats2.defensiveRating
+                        ? (
+                            stats2.offensiveRating - stats2.defensiveRating
+                          ).toFixed(1)
+                        : "N/A"}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {stats2.offensiveRating?.toFixed(1)} ORtg -{" "}
+                    {stats2.defensiveRating?.toFixed(1)} DRtg
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        )}
 
-        {(!team1Id || !team2Id) && (
-          <p className="text-center text-muted-foreground">
-            Select two teams to analyze their matchup
-          </p>
-        )}
-      </div>
+          {/* Pace Analysis */}
+          {stats1.pace && stats2.pace && (
+            <div className="bg-card border rounded-lg p-4">
+              <h4 className="font-semibold text-foreground mb-2">
+                Pace Analysis
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {team1?.abbreviation}: {stats1.pace.toFixed(1)} possessions/game
+                | {team2?.abbreviation}: {stats2.pace.toFixed(1)}{" "}
+                possessions/game
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Pace differential: {matchup.paceDiff.toFixed(1)} possessions
+                {matchup.paceDiff > 2 &&
+                  " (Significant difference - expect pace to favor faster team)"}
+              </p>
+            </div>
+          )}
+
+          {/* Key Insights */}
+          <div className="bg-muted p-4 rounded-lg">
+            <h4 className="font-semibold text-foreground mb-2">Key Insights</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>
+                •{" "}
+                {matchup.team1OffenseAdvantage > matchup.team2OffenseAdvantage
+                  ? `${team1?.abbreviation} has the better offensive matchup advantage`
+                  : `${team2?.abbreviation} has the better offensive matchup advantage`}
+              </li>
+              <li>
+                • Net rating favors {matchup.predictedWinner?.abbreviation} by{" "}
+                {matchup.confidence.toFixed(1)} points
+              </li>
+              {stats1.pace && stats2.pace && matchup.paceDiff > 2 && (
+                <li>
+                  • Pace advantage to{" "}
+                  {stats1.pace > stats2.pace
+                    ? team1?.abbreviation
+                    : team2?.abbreviation}{" "}
+                  (faster tempo)
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {(!team1Id || !team2Id) && (
+        <p className="text-center text-muted-foreground">
+          Select two teams to analyze their matchup
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default function MatchupPage() {
+  return (
+    <Suspense fallback={<div className="p-8">Loading...</div>}>
+      <MatchupContent />
     </Suspense>
   );
 }
