@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import type { Team } from "@/lib/types/team";
 import { Card } from "@/components/ui/card";
+import { useSearchParams } from "next/navigation";
 
 async function fetchTeams(): Promise<Team[]> {
   const response = await fetch("/api/teams");
@@ -24,8 +25,13 @@ export default function ComparePage() {
     queryFn: fetchTeams,
   });
 
-  const [team1Id, setTeam1Id] = useState<string>("");
-  const [team2Id, setTeam2Id] = useState<string>("");
+  const searchParams = useSearchParams();
+  const [team1Id, setTeam1Id] = useState<string>(
+    searchParams.get("team1") || ""
+  );
+  const [team2Id, setTeam2Id] = useState<string>(
+    searchParams.get("team2") || ""
+  );
 
   const team1 = teams?.find((t) => t.id.toString() === team1Id);
   const team2 = teams?.find((t) => t.id.toString() === team2Id);

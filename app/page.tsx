@@ -14,8 +14,14 @@ import type { Team } from "@/lib/types/team";
 import { Card } from "@/components/ui/card";
 import { TodaysGame } from "@/lib/types/nba-data";
 import { Button } from "@/components/ui/button";
-import { Target } from "lucide-react";
+import { Target, Scale } from "lucide-react";
 import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 async function fetchTeams(): Promise<Team[]> {
   const response = await fetch("/api/teams");
@@ -157,91 +163,122 @@ export default function Home() {
     <>
       {/* Today's Games Section */}
       {todaysGames && todaysGames.length > 0 && (
-        <Card className="p-6 border-t-4 border-accent mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-foreground">
-              Today&apos;s Games{" "}
-              {todaysGames.length > 0 && `(${todaysGames.length})`}
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              Scores shown when final
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {todaysGames.map((game: TodaysGame) => {
-              return (
-                <Card
-                  key={game.gameId}
-                  className={`p-4 hover:shadow-md transition-shadow ${
-                    game.isFinal ? "border-l-4 border-l-green-500" : ""
-                  }`}
-                >
-                  <div className="flex flex-col gap-3">
-                    {/* Away Team */}
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="font-semibold text-primary">
-                          {game.awayTeam?.abbreviation}
-                        </span>
-                        <span className="text-sm text-muted-foreground hidden sm:inline">
-                          {game.awayTeam?.name}
+        <TooltipProvider>
+          <Card className="p-6 border-t-4 border-accent mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-semibold text-foreground">
+                Today&apos;s Games{" "}
+                {todaysGames.length > 0 && `(${todaysGames.length})`}
+              </h2>
+              <span className="text-xs text-muted-foreground">
+                Scores shown when final
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {todaysGames.map((game: TodaysGame) => {
+                return (
+                  <Card
+                    key={game.gameId}
+                    className={`p-4 hover:shadow-md transition-shadow ${
+                      game.isFinal ? "border-l-4 border-l-green-500" : ""
+                    }`}
+                  >
+                    <div className="flex flex-col gap-3">
+                      {/* Away Team */}
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="font-semibold text-primary">
+                            {game.awayTeam?.abbreviation}
+                          </span>
+                          <span className="text-sm text-muted-foreground hidden sm:inline">
+                            {game.awayTeam?.name}
+                          </span>
+                        </div>
+                        {game.isFinal && game.awayScore !== null && (
+                          <span className="text-2xl font-bold ml-2">
+                            {game.awayScore}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Home Team */}
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="font-semibold text-primary">
+                            {game.homeTeam?.abbreviation}
+                          </span>
+                          <span className="text-sm text-muted-foreground hidden sm:inline">
+                            {game.homeTeam?.name}
+                          </span>
+                        </div>
+                        {game.isFinal && game.homeScore !== null && (
+                          <span className="text-2xl font-bold ml-2">
+                            {game.homeScore}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Status/Time */}
+                      <div className="text-center pt-2 border-t">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(game.gameDate).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            timeZone: "UTC",
+                          })}{" "}
+                          • {game.isFinal ? "✅ Final" : game.gameTime}
                         </span>
                       </div>
-                      {game.isFinal && game.awayScore !== null && (
-                        <span className="text-2xl font-bold ml-2">
-                          {game.awayScore}
-                        </span>
-                      )}
-                    </div>
 
-                    {/* Home Team */}
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="font-semibold text-primary">
-                          {game.homeTeam?.abbreviation}
-                        </span>
-                        <span className="text-sm text-muted-foreground hidden sm:inline">
-                          {game.homeTeam?.name}
-                        </span>
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 mt-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link
+                              href={`/compare?team1=${game.awayTeam?.id}&team2=${game.homeTeam?.id}`}
+                              className="flex-1"
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                              >
+                                <Scale className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Compare Teams</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link
+                              href={`/matchup?team1=${game.awayTeam?.id}&team2=${game.homeTeam?.id}&home=team2`}
+                              className="flex-1"
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                              >
+                                <Target className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Analyze Matchup</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
-                      {game.isFinal && game.homeScore !== null && (
-                        <span className="text-2xl font-bold ml-2">
-                          {game.homeScore}
-                        </span>
-                      )}
                     </div>
-
-                    {/* Status/Time */}
-                    <div className="text-center pt-2 border-t">
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(game.gameDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          timeZone: "UTC",
-                        })}{" "}
-                        • {game.isFinal ? "✅ Final" : game.gameTime}
-                      </span>
-                    </div>
-
-                    {/* Analyze Button */}
-                    <Link
-                      href={`/matchup?team1=${game.awayTeam?.id}&team2=${game.homeTeam?.id}&home=team2`}
-                    >
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full mt-2"
-                      >
-                        <Target className="h-4 w-4 mr-2" />
-                        Analyze Matchup
-                      </Button>
-                    </Link>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </Card>
+                  </Card>
+                );
+              })}
+            </div>
+          </Card>
+        </TooltipProvider>
       )}
 
       {!gamesLoading && (!todaysGames || todaysGames.length === 0) && (
