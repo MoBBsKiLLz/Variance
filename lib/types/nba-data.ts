@@ -76,3 +76,34 @@ export function mapRowToTeamStats(row: NBAStatRow): ProcessedTeamData {
     pace: row[14] ?? null
   };
 }
+
+export type GameData = {
+  gameId: string;
+  gameDate: Date;
+  season: string;
+  homeTeamId: number;
+  awayTeamId: number;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: string;
+  gameTime: string;
+};
+
+export type TodaysGame = {
+  gameId: string;
+  gameDate: Date;
+  homeTeam: {
+    id: number;
+    abbreviation: string;
+    name: string;
+  } | null;
+  awayTeam: {
+    id: number;
+    abbreviation: string;
+    name: string;
+  } | null;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: string;
+  gameTime: string;
+};
