@@ -19,6 +19,7 @@ import {
   calculateWeightedRatings,
   getFormDescription,
 } from "@/lib/utils/weighted-prediction";
+import { useSearchParams } from "next/navigation";
 
 async function fetchTeams(): Promise<Team[]> {
   const response = await fetch("/api/teams");
@@ -32,10 +33,15 @@ export default function MatchupPage() {
     queryFn: fetchTeams,
   });
 
-  const [team1Id, setTeam1Id] = useState<string>("");
-  const [team2Id, setTeam2Id] = useState<string>("");
+  const searchParams = useSearchParams();
+  const [team1Id, setTeam1Id] = useState<string>(
+    searchParams.get("team1") || ""
+  );
+  const [team2Id, setTeam2Id] = useState<string>(
+    searchParams.get("team2") || ""
+  );
   const [homeTeam, setHomeTeam] = useState<"team1" | "team2" | "neutral">(
-    "neutral"
+    (searchParams.get("home") as "team1" | "team2" | "neutral") || "neutral"
   );
 
   const team1 = teams?.find((t) => t.id.toString() === team1Id);

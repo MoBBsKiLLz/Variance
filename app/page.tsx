@@ -9,10 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Team } from "@/lib/types/team";
 import { Card } from "@/components/ui/card";
 import { TodaysGame } from "@/lib/types/nba-data";
+import { Button } from "@/components/ui/button";
+import { Target } from "lucide-react";
+import Link from "next/link";
 
 async function fetchTeams(): Promise<Team[]> {
   const response = await fetch("/api/teams");
@@ -28,6 +31,8 @@ export default function Home() {
   } = useQuery({
     queryKey: ["teams"],
     queryFn: fetchTeams,
+    refetchInterval: 2 * 60 * 60 * 1000, // Refetch every 2 hours (in milliseconds)
+    refetchIntervalInBackground: false, // Only refetch when tab is active
   });
   const [sortKey, setSortKey] = useState<
     | "name"
@@ -124,6 +129,30 @@ export default function Home() {
     refetchInterval: 30000,
   });
 
+  // Add this useEffect in app/page.tsx
+  useEffect(() => {
+    const refreshData = async () => {
+      try {
+        await fetch("/api/fetch-nba-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ season: "2025-26" }),
+        });
+        console.log("Data refreshed");
+      } catch (error) {
+        console.error("Auto-refresh failed:", error);
+      }
+    };
+
+    // Run immediately on mount
+    refreshData();
+
+    // Then every 2 hours
+    const interval = setInterval(refreshData, 2 * 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
       {/* Today's Games Section */}
@@ -193,6 +222,20 @@ export default function Home() {
                         • {game.isFinal ? "✅ Final" : game.gameTime}
                       </span>
                     </div>
+
+                    {/* Analyze Button */}
+                    <Link
+                      href={`/matchup?team1=${game.awayTeam?.id}&team2=${game.homeTeam?.id}&home=team2`}
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2"
+                      >
+                        <Target className="h-4 w-4 mr-2" />
+                        Analyze Matchup
+                      </Button>
+                    </Link>
                   </div>
                 </Card>
               );
