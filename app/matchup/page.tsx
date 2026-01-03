@@ -20,6 +20,8 @@ import {
   getFormDescription,
 } from "@/lib/utils/weighted-prediction";
 import { useSearchParams } from "next/navigation";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 async function fetchTeams(): Promise<Team[]> {
   const response = await fetch("/api/teams");
@@ -267,14 +269,44 @@ export default function MatchupPage() {
         <div className="space-y-6">
           {/* Prediction */}
           <div className="bg-muted p-6 rounded-lg text-center">
-            <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+            <h3 className="text-lg font-semibold text-muted-foreground mb-2 flex items-center justify-center gap-2">
               Predicted Winner
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">
+                    Prediction based on net rating difference (Offensive Rating
+                    - Defensive Rating). Higher is better. Even negative numbers
+                    can win if opponent is worse.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             </h3>
             <p className="text-3xl font-bold text-primary">
               {matchup.predictedWinner?.name}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               Net Rating: {matchup.finalNetRatingDiff.toFixed(1)} pts
+              {matchup.finalNetRatingDiff > 0
+                ? " advantage"
+                : matchup.finalNetRatingDiff < 0
+                ? " (less negative)"
+                : ""}
+            </p>
+            {/* Add confidence level context */}
+            <p className="text-xs text-muted-foreground mt-1">
+              {Math.abs(matchup.finalNetRatingDiff) >= 10 &&
+                "🔥 High confidence"}
+              {Math.abs(matchup.finalNetRatingDiff) >= 5 &&
+                Math.abs(matchup.finalNetRatingDiff) < 10 &&
+                "✓ Strong advantage"}
+              {Math.abs(matchup.finalNetRatingDiff) >= 2 &&
+                Math.abs(matchup.finalNetRatingDiff) < 5 &&
+                "⚡ Moderate edge"}
+              {Math.abs(matchup.finalNetRatingDiff) < 2 &&
+                "🤝 Close game - Toss-up"}
             </p>
             {matchup.homeCourtAdjustment !== 0 && (
               <p className="text-xs text-muted-foreground mt-1">
