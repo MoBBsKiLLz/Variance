@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { NBAStatRow, NBATeamStat, ProcessedTeamData } from '@/lib/types/nba-data';
 import { NBA_HEADERS, NBA_BASE_URL, TEAM_ABBREVIATIONS } from '@/lib/constants/nba';
-import { fetchSeasonGames } from '@/lib/data/nba-games-fetcher';
 
 const prisma = new PrismaClient();
 const teamAbbreviations = TEAM_ABBREVIATIONS as Record<number, string>;
@@ -172,56 +171,10 @@ export async function POST(request: NextRequest) {
             teamsCount++;
         }
 
-        // After the team stats loop, before the return statement
-        console.log('Fetching game results...');
-        const gamesData = await fetchSeasonGames(season);
-
-        let gamesCount = 0;
-
-        for (const gameData of gamesData) {
-            const homeTeam = await prisma.nBATeam.findUnique({
-                where: { teamId: gameData.homeTeamId }
-            });
-
-            const awayTeam = await prisma.nBATeam.findUnique({
-                where: { teamId: gameData.awayTeamId }
-            });
-
-            if (!homeTeam || !awayTeam) {
-                continue;
-            }
-
-            await prisma.nBAGame.upsert({
-                where: { gameId: gameData.gameId },
-                update: {
-                    gameDate: gameData.gameDate,
-                    season: season,
-                    homeScore: gameData.homeScore,
-                    awayScore: gameData.awayScore,
-                    status: gameData.status
-                },
-                create: {
-                    gameId: gameData.gameId,
-                    gameDate: gameData.gameDate,
-                    season: season,
-                    homeTeamId: homeTeam.id,
-                    awayTeamId: awayTeam.id,
-                    homeScore: gameData.homeScore,
-                    awayScore: gameData.awayScore,
-                    status: gameData.status
-                }
-            });
-
-            gamesCount++;
-        }
-
-        console.log(`Imported ${gamesCount} games`);
-
         return NextResponse.json({
             success: true,
             season,
-            teamsCount,
-            gamesCount
+            teamsCount
         });
 
     } catch (error) {

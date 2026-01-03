@@ -15,19 +15,20 @@ import { getSeasonOptions } from "@/lib/constants/nba";
 
 export default function DataPage() {
   const [selectedSeason, setSelectedSeason] = useState<string>("2025-26");
-  const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [message, setMessage] = useState<string>("");
+  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
+  const [isLoadingGames, setIsLoadingGames] = useState(false);
 
   const seasons = getSeasonOptions();
 
-  const handleFetchData = async () => {
-    setIsLoading(true);
+  const handleFetchTeams = async () => {
+    setIsLoadingTeams(true);
     setStatus("idle");
     setMessage("");
 
     try {
-      const response = await fetch("/api/fetch-nba-data", {
+      const response = await fetch("/api/fetch-nba-teams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,13 +44,45 @@ export default function DataPage() {
 
       setStatus("success");
       setMessage(
-        `Successfully imported ${data.teamsCount} teams and ${data.gamesCount} games for ${selectedSeason} season`
+        `Successfully imported ${data.teamsCount} teams for ${selectedSeason} season`
       );
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "An error occurred");
     } finally {
-      setIsLoading(false);
+      setIsLoadingTeams(false);
+    }
+  };
+
+  const handleFetchGames = async () => {
+    setIsLoadingGames(true);
+    setStatus("idle");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/fetch-nba-games", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ season: selectedSeason }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch games");
+      }
+
+      setStatus("success");
+      setMessage(
+        `Successfully imported ${data.gamesCount} games for ${selectedSeason} season`
+      );
+    } catch (error) {
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "An error occurred");
+    } finally {
+      setIsLoadingGames(false);
     }
   };
 
@@ -82,21 +115,40 @@ export default function DataPage() {
           </Select>
         </div>
 
-        <div>
+        <div className="flex gap-4">
           <Button
-            onClick={handleFetchData}
-            disabled={isLoading}
+            onClick={handleFetchTeams}
+            disabled={isLoadingTeams || isLoadingGames}
             className="min-w-50"
           >
-            {isLoading ? (
+            {isLoadingTeams ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Fetching Data...
+                Fetching Teams...
               </>
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Fetch NBA Data
+                Fetch Team Stats
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleFetchGames}
+            disabled={isLoadingTeams || isLoadingGames}
+            className="min-w-50"
+            variant="outline"
+          >
+            {isLoadingGames ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Fetching Games...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Fetch Games
               </>
             )}
           </Button>
@@ -123,10 +175,8 @@ export default function DataPage() {
           <h3 className="font-semibold mb-2">How it works:</h3>
           <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
             <li>Select the NBA season you want to import</li>
-            <li>
-              Click &quot;Fetch NBA Data&quot; to retrieve team statistics from
-              the NBA API
-            </li>
+            <li>Click &quot;Fetch Team Stats&quot; to retrieve team statistics</li>
+            <li>Click &quot;Fetch Games&quot; to retrieve game results</li>
             <li>
               Data includes offensive/defensive ratings, pace, and traditional
               stats

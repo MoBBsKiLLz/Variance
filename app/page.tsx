@@ -139,7 +139,7 @@ export default function Home() {
   useEffect(() => {
     const refreshData = async () => {
       try {
-        await fetch("/api/fetch-nba-data", {
+        await fetch("/api/fetch-nba-teams", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ season: "2025-26" }),
