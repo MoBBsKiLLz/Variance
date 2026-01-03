@@ -98,10 +98,24 @@ export async function POST(request: NextRequest) {
 
         const teamsData = await fetchNBAData(season);
 
-        let teamsCount = 0;
+        // Helper function to process in batches
+        async function processBatch<T, R>(
+            items: T[],
+            batchSize: number,
+            processor: (item: T) => Promise<R>
+        ): Promise<R[]> {
+            const results: R[] = [];
+            for (let i = 0; i < items.length; i += batchSize) {
+                const batch = items.slice(i, i + batchSize);
+                const batchResults = await Promise.all(batch.map(processor));
+                results.push(...batchResults);
+            }
+            return results;
+        }
 
-        for (const teamData of teamsData) {
-            const team = await prisma.nBATeam.upsert({
+        // Upsert teams in batches of 5
+        const teams = await processBatch(teamsData, 5, async (teamData) => {
+            return prisma.nBATeam.upsert({
                 where: { teamId: teamData.teamId },
                 update: {
                     abbreviation: teamData.abbreviation,
@@ -119,11 +133,20 @@ export async function POST(request: NextRequest) {
                     city: teamData.name.split(' ').slice(0, -1).join(' ')
                 }
             });
+        });
 
-            await prisma.nBATeamStats.upsert({
+        // Create a map of teamId to database id
+        const teamMap = new Map(teams.map(team => [team.teamId, team.id]));
+
+        // Upsert stats in batches of 5
+        await processBatch(teamsData, 5, async (teamData) => {
+            const dbTeamId = teamMap.get(teamData.teamId);
+            if (!dbTeamId) return null;
+
+            return prisma.nBATeamStats.upsert({
                 where: {
                     teamId_season: {
-                        teamId: team.id,
+                        teamId: dbTeamId,
                         season: season
                     }
                 },
@@ -147,7 +170,7 @@ export async function POST(request: NextRequest) {
                     lastUpdated: new Date()
                 },
                 create: {
-                    teamId: team.id,
+                    teamId: dbTeamId,
                     season: season,
                     gamesPlayed: teamData.gamesPlayed,
                     wins: teamData.wins,
@@ -167,14 +190,12 @@ export async function POST(request: NextRequest) {
                     pace: teamData.pace
                 }
             });
-
-            teamsCount++;
-        }
+        });
 
         return NextResponse.json({
             success: true,
             season,
-            teamsCount
+            teamsCount: teamsData.length
         });
 
     } catch (error) {

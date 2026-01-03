@@ -18,22 +18,45 @@ export async function POST(request: NextRequest) {
     console.log('Fetching game results...');
     const gamesData = await fetchSeasonGames(season);
 
-    let gamesCount = 0;
-
-    for (const gameData of gamesData) {
-      const homeTeam = await prisma.nBATeam.findUnique({
-        where: { teamId: gameData.homeTeamId }
-      });
-      
-      const awayTeam = await prisma.nBATeam.findUnique({
-        where: { teamId: gameData.awayTeamId }
-      });
-      
-      if (!homeTeam || !awayTeam) {
-        continue;
+    // Pre-fetch all teams once
+    const allTeams = await prisma.nBATeam.findMany({
+      select: {
+        id: true,
+        teamId: true
       }
-      
-      await prisma.nBAGame.upsert({
+    });
+
+    // Create a lookup map for faster team ID resolution
+    const teamMap = new Map(allTeams.map(team => [team.teamId, team.id]));
+
+    // Filter games to only those with valid teams
+    const validGames = gamesData.filter(gameData => {
+      const homeTeam = teamMap.get(gameData.homeTeamId);
+      const awayTeam = teamMap.get(gameData.awayTeamId);
+      return homeTeam && awayTeam;
+    });
+
+    // Helper function to process in batches
+    async function processBatch<T, R>(
+      items: T[], 
+      batchSize: number, 
+      processor: (item: T) => Promise<R>
+    ): Promise<R[]> {
+      const results: R[] = [];
+      for (let i = 0; i < items.length; i += batchSize) {
+        const batch = items.slice(i, i + batchSize);
+        const batchResults = await Promise.all(batch.map(processor));
+        results.push(...batchResults);
+      }
+      return results;
+    }
+
+    // Upsert games in batches of 10
+    await processBatch(validGames, 10, async (gameData) => {
+      const homeTeamId = teamMap.get(gameData.homeTeamId)!;
+      const awayTeamId = teamMap.get(gameData.awayTeamId)!;
+
+      return prisma.nBAGame.upsert({
         where: { gameId: gameData.gameId },
         update: {
           gameDate: gameData.gameDate,
@@ -46,23 +69,21 @@ export async function POST(request: NextRequest) {
           gameId: gameData.gameId,
           gameDate: gameData.gameDate,
           season: season,
-          homeTeamId: homeTeam.id,
-          awayTeamId: awayTeam.id,
+          homeTeamId: homeTeamId,
+          awayTeamId: awayTeamId,
           homeScore: gameData.homeScore,
           awayScore: gameData.awayScore,
           status: gameData.status
         }
       });
-      
-      gamesCount++;
-    }
+    });
 
-    console.log(`Imported ${gamesCount} games`);
+    console.log(`Imported ${validGames.length} games`);
 
     return NextResponse.json({
       success: true,
       season,
-      gamesCount
+      gamesCount: validGames.length
     });
 
   } catch (error) {
