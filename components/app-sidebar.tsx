@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Home, Scale, Target, Settings } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Home, Scale, Target, Settings, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -12,27 +12,32 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@/components/ui/sidebar';
+} from "@/components/ui/sidebar";
 
 const items = [
   {
-    title: 'Dashboard',
-    url: '/',
+    title: "Dashboard",
+    url: "/",
     icon: Home,
   },
   {
-    title: 'Compare Teams',
-    url: '/compare',
+    title: "Compare Teams",
+    url: "/compare",
     icon: Scale,
   },
   {
-    title: 'Analyze Matchup',
-    url: '/matchup',
+    title: "Analyze Matchup",
+    url: "/matchup",
     icon: Target,
   },
   {
-    title: 'Manage Data',
-    url: '/data',
+    title: "Season Trends",
+    url: "/trends",
+    icon: TrendingUp,
+  },
+  {
+    title: "Manage Data",
+    url: "/data",
     icon: Settings,
   },
 ];

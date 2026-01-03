@@ -15,6 +15,10 @@ import {
   adjustPredictionWithHistory,
   calculateHomeCourtAdvantage,
 } from "@/lib/utils/matchup-calculator";
+import {
+  calculateWeightedRatings,
+  getFormDescription,
+} from "@/lib/utils/weighted-prediction";
 
 async function fetchTeams(): Promise<Team[]> {
   const response = await fetch("/api/teams");
@@ -53,6 +57,34 @@ export default function MatchupPage() {
     enabled: !!team1Id && !!team2Id,
   });
 
+  const { data: team1RecentForm } = useQuery({
+    queryKey: ["recent-form", team1Id],
+    queryFn: async () => {
+      if (!team1Id) return null;
+      const response = await fetch(
+        `/api/recent-games?teamId=${team1Id}&limit=10&season=2025-26`
+      );
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.recentForm;
+    },
+    enabled: !!team1Id,
+  });
+
+  const { data: team2RecentForm } = useQuery({
+    queryKey: ["recent-form", team2Id],
+    queryFn: async () => {
+      if (!team2Id) return null;
+      const response = await fetch(
+        `/api/recent-games?teamId=${team2Id}&limit=10&season=2025-26`
+      );
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.recentForm;
+    },
+    enabled: !!team2Id,
+  });
+
   // Matchup analysis calculations
   const getMatchupAdvantage = () => {
     if (
@@ -66,38 +98,63 @@ export default function MatchupPage() {
       return null;
     }
 
+    // Calculate weighted ratings based on recent form
+    const team1Weighted = calculateWeightedRatings(
+      {
+        offensiveRating: stats1.offensiveRating,
+        defensiveRating: stats1.defensiveRating,
+        wins: stats1.wins,
+        losses: stats1.losses,
+      },
+      team1RecentForm
+    );
+
+    const team2Weighted = calculateWeightedRatings(
+      {
+        offensiveRating: stats2.offensiveRating,
+        defensiveRating: stats2.defensiveRating,
+        wins: stats2.wins,
+        losses: stats2.losses,
+      },
+      team2RecentForm
+    );
+
+    // Use weighted ratings instead of raw season ratings
     const team1OffenseAdvantage =
-      stats1.offensiveRating - stats2.defensiveRating;
+      team1Weighted.weightedOffensiveRating -
+      team2Weighted.weightedDefensiveRating;
     const team2OffenseAdvantage =
-      stats2.offensiveRating - stats1.defensiveRating;
-    const team1NetRating = stats1.offensiveRating - stats1.defensiveRating;
-    const team2NetRating = stats2.offensiveRating - stats2.defensiveRating;
+      team2Weighted.weightedOffensiveRating -
+      team1Weighted.weightedDefensiveRating;
+
+    const team1NetRating =
+      team1Weighted.weightedOffensiveRating -
+      team1Weighted.weightedDefensiveRating;
+    const team2NetRating =
+      team2Weighted.weightedOffensiveRating -
+      team2Weighted.weightedDefensiveRating;
     const baseNetRatingDiff = team1NetRating - team2NetRating;
 
-    // Calculate matchup history
+    // Rest of the function stays the same...
     const matchupHistory = h2hGames
       ? calculateMatchupHistory(parseInt(team1Id), parseInt(team2Id), h2hGames)
       : null;
 
-    // Adjust prediction with history
     const adjusted = matchupHistory
       ? adjustPredictionWithHistory(baseNetRatingDiff, matchupHistory)
       : null;
 
-    const paceDiff =
-      stats1.pace && stats2.pace ? Math.abs(stats1.pace - stats2.pace) : 0;
-
-    // After the matchup history calculation, add:
     const homeCourtAdv = calculateHomeCourtAdvantage(
       homeTeam === "team1" ? true : homeTeam === "team2" ? false : null,
       { wins: stats1.wins, losses: stats1.losses },
       { wins: stats2.wins, losses: stats2.losses }
     );
 
-    // Update the final prediction to include home court
     const finalNetRatingDiff =
       (adjusted?.adjustedNetRatingDiff || baseNetRatingDiff) +
       homeCourtAdv.adjustment;
+    const paceDiff =
+      stats1.pace && stats2.pace ? Math.abs(stats1.pace - stats2.pace) : 0;
 
     return {
       team1OffenseAdvantage,
@@ -114,6 +171,16 @@ export default function MatchupPage() {
       paceDiff,
       predictedWinner: finalNetRatingDiff > 0 ? team1 : team2,
       confidence: Math.abs(finalNetRatingDiff),
+      team1Form: team1Weighted.formTrend,
+      team2Form: team2Weighted.formTrend,
+      team1FormDescription: getFormDescription(
+        team1RecentForm,
+        team1Weighted.formTrend
+      ),
+      team2FormDescription: getFormDescription(
+        team2RecentForm,
+        team2Weighted.formTrend
+      ),
     };
   };
 
@@ -167,7 +234,7 @@ export default function MatchupPage() {
         </div>
       </div>
 
-      <div className="md:col-span-2">
+      <div className="md:col-span-2 mb-6">
         <label className="block text-sm font-medium mb-2">Home Court</label>
         <Select
           value={homeTeam}
@@ -209,6 +276,57 @@ export default function MatchupPage() {
               </p>
             )}
           </div>
+
+          {/* Recent Form Section */}
+          {matchup && (team1RecentForm || team2RecentForm) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {team1RecentForm && (
+                <div className="bg-card border rounded-lg p-4">
+                  <h4 className="font-semibold text-foreground mb-2">
+                    {team1?.abbreviation} Recent Form
+                  </h4>
+                  <p className="text-sm mb-2">{matchup.team1FormDescription}</p>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div>
+                      Avg: {team1RecentForm.avgPointsScored.toFixed(1)} pts
+                      scored, {team1RecentForm.avgPointsAllowed.toFixed(1)}{" "}
+                      allowed
+                    </div>
+                    {team1RecentForm.recentOffensiveRating && (
+                      <div>
+                        ORtg: {team1RecentForm.recentOffensiveRating.toFixed(1)}{" "}
+                        | DRtg:{" "}
+                        {team1RecentForm.recentDefensiveRating?.toFixed(1)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {team2RecentForm && (
+                <div className="bg-card border rounded-lg p-4">
+                  <h4 className="font-semibold text-foreground mb-2">
+                    {team2?.abbreviation} Recent Form
+                  </h4>
+                  <p className="text-sm mb-2">{matchup.team2FormDescription}</p>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div>
+                      Avg: {team2RecentForm.avgPointsScored.toFixed(1)} pts
+                      scored, {team2RecentForm.avgPointsAllowed.toFixed(1)}{" "}
+                      allowed
+                    </div>
+                    {team2RecentForm.recentOffensiveRating && (
+                      <div>
+                        ORtg: {team2RecentForm.recentOffensiveRating.toFixed(1)}{" "}
+                        | DRtg:{" "}
+                        {team2RecentForm.recentDefensiveRating?.toFixed(1)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Historical Matchup Section */}
           {matchup?.matchupHistory &&
