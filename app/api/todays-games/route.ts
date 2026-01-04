@@ -22,7 +22,7 @@ export async function GET() {
     // Create date range using US Eastern date components
     const todayStart = new Date(Date.UTC(year, month - 1, day));
     const todayEnd = new Date(Date.UTC(year, month - 1, day + 1));
-    
+
     // Fetch games from database that happened today or are scheduled for today
     const games = await prisma.nBAGame.findMany({
       where: {
@@ -51,7 +51,6 @@ export async function GET() {
         gameDate: 'asc'
       }
     });
-    console.log(games);
 
     // Format the response
     const formattedGames = games.map(game => ({
