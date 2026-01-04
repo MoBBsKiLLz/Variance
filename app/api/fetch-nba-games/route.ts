@@ -27,61 +27,43 @@ export async function POST(request: NextRequest) {
     // Create a lookup map for faster team ID resolution
     const teamMap = new Map(allTeams.map(team => [team.teamId, team.id]));
 
-    // Filter games to only those with valid teams
-    const validGames = gamesData.filter(gameData => {
-      const homeTeam = teamMap.get(gameData.homeTeamId);
-      const awayTeam = teamMap.get(gameData.awayTeamId);
-      return homeTeam && awayTeam;
+    // Filter and prepare games
+    const validGames = gamesData
+      .filter(gameData => {
+        const homeTeam = teamMap.get(gameData.homeTeamId);
+        const awayTeam = teamMap.get(gameData.awayTeamId);
+        return homeTeam && awayTeam;
+      })
+      .map(gameData => ({
+        gameId: gameData.gameId,
+        gameDate: gameData.gameDate,
+        season: season,
+        homeTeamId: teamMap.get(gameData.homeTeamId)!,
+        awayTeamId: teamMap.get(gameData.awayTeamId)!,
+        homeScore: gameData.homeScore,
+        awayScore: gameData.awayScore,
+        status: gameData.status
+      }));
+
+    console.log(`Processing ${validGames.length} games...`);
+
+    // Delete existing games for this season first
+    await prisma.nBAGame.deleteMany({
+      where: { season: season }
     });
 
-    // Helper function to process in batches
-    async function processBatch<T, R>(
-      items: T[], 
-      batchSize: number, 
-      processor: (item: T) => Promise<R>
-    ): Promise<R[]> {
-      const results: R[] = [];
-      for (let i = 0; i < items.length; i += batchSize) {
-        const batch = items.slice(i, i + batchSize);
-        const batchResults = await Promise.all(batch.map(processor));
-        results.push(...batchResults);
-      }
-      return results;
-    }
-
-    // Upsert games in batches of 1
-    await processBatch(validGames, 1, async (gameData) => {
-      const homeTeamId = teamMap.get(gameData.homeTeamId)!;
-      const awayTeamId = teamMap.get(gameData.awayTeamId)!;
-
-      return prisma.nBAGame.upsert({
-        where: { gameId: gameData.gameId },
-        update: {
-          gameDate: gameData.gameDate,
-          season: season,
-          homeScore: gameData.homeScore,
-          awayScore: gameData.awayScore,
-          status: gameData.status
-        },
-        create: {
-          gameId: gameData.gameId,
-          gameDate: gameData.gameDate,
-          season: season,
-          homeTeamId: homeTeamId,
-          awayTeamId: awayTeamId,
-          homeScore: gameData.homeScore,
-          awayScore: gameData.awayScore,
-          status: gameData.status
-        }
-      });
+    // Bulk insert all games at once
+    const result = await prisma.nBAGame.createMany({
+      data: validGames,
+      skipDuplicates: true
     });
 
-    console.log(`Imported ${validGames.length} games`);
+    console.log(`Imported ${result.count} games`);
 
     return NextResponse.json({
       success: true,
       season,
-      gamesCount: validGames.length
+      gamesCount: result.count
     });
 
   } catch (error) {
