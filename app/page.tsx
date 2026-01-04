@@ -164,7 +164,7 @@ export default function Home() {
       {todaysGames && todaysGames.length > 0 && (
         <TooltipProvider>
           <Card className="p-6 border-t-4 border-accent mb-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
               <h2 className="text-2xl font-semibold text-foreground">
                 Today&apos;s Games{" "}
                 {todaysGames &&
