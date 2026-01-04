@@ -115,11 +115,11 @@ export default function DataPage() {
           </Select>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <Button
             onClick={handleFetchTeams}
             disabled={isLoadingTeams || isLoadingGames}
-            className="min-w-50"
+            className="w-full sm:w-auto sm:min-w-50"
           >
             {isLoadingTeams ? (
               <>
@@ -137,7 +137,7 @@ export default function DataPage() {
           <Button
             onClick={handleFetchGames}
             disabled={isLoadingTeams || isLoadingGames}
-            className="min-w-50"
+            className="w-full sm:w-auto sm:min-w-50"
             variant="outline"
           >
             {isLoadingGames ? (
