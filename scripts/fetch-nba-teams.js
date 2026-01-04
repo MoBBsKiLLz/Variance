@@ -3,10 +3,8 @@
  * Fetches NBA team statistics and stores them in the database
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { fetchAllNBAData } from '../lib/data/nba-fetcher.js';
-
-const prisma = new PrismaClient();
 
 async function seedNBATeams() {
     console.log('Starting NBA data import...\n');

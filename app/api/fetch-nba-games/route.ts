@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { fetchSeasonGames } from '@/lib/data/nba-games-fetcher';
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,8 +49,8 @@ export async function POST(request: NextRequest) {
       return results;
     }
 
-    // Upsert games in batches of 10
-    await processBatch(validGames, 10, async (gameData) => {
+    // Upsert games in batches of 1
+    await processBatch(validGames, 1, async (gameData) => {
       const homeTeamId = teamMap.get(gameData.homeTeamId)!;
       const awayTeamId = teamMap.get(gameData.awayTeamId)!;
 

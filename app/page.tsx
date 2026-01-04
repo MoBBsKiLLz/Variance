@@ -132,7 +132,6 @@ export default function Home() {
       if (!response.ok) throw new Error("Failed to fetch games");
       return response.json();
     },
-    staleTime: 5 * 60 * 1000
   });
 
   // Add this useEffect in app/page.tsx

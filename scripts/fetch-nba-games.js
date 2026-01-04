@@ -3,10 +3,8 @@
  * Fetches and stores game results in the database
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { fetchSeasonGames } from '../lib/data/nba-games-fetcher.js';
-
-const prisma = new PrismaClient();
 
 async function importGames(season = '2025-26') {
   console.log(`Starting NBA games import for ${season}...\n`);

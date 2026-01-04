@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { NBAStatRow, NBATeamStat, ProcessedTeamData } from '@/lib/types/nba-data';
 import { NBA_HEADERS, NBA_BASE_URL, TEAM_ABBREVIATIONS } from '@/lib/constants/nba';
 
-const prisma = new PrismaClient();
 const teamAbbreviations = TEAM_ABBREVIATIONS as Record<number, string>;
 
 // Import the fetcher - we'll need to convert it to TypeScript or import properly
@@ -98,31 +97,16 @@ export async function POST(request: NextRequest) {
 
         const teamsData = await fetchNBAData(season);
 
-        // Helper function to process in batches
-        async function processBatch<T, R>(
-            items: T[],
-            batchSize: number,
-            processor: (item: T) => Promise<R>
-        ): Promise<R[]> {
-            const results: R[] = [];
-            for (let i = 0; i < items.length; i += batchSize) {
-                const batch = items.slice(i, i + batchSize);
-                const batchResults = await Promise.all(batch.map(processor));
-                results.push(...batchResults);
-            }
-            return results;
-        }
-
-        // Upsert teams in batches of 5
-        const teams = await processBatch(teamsData, 5, async (teamData) => {
-            return prisma.nBATeam.upsert({
+        for (const teamData of teamsData) {
+            // Upsert team
+            const team = await prisma.nBATeam.upsert({
                 where: { teamId: teamData.teamId },
                 update: {
                     abbreviation: teamData.abbreviation,
                     name: teamData.name,
                     conference: 'Unknown',
                     division: 'Unknown',
-                    city: teamData.name.split(' ').slice(0, -1).join(' ')
+                    city: teamData.name.split(' ').slice(0, -1).join(' '),
                 },
                 create: {
                     teamId: teamData.teamId,
@@ -130,25 +114,17 @@ export async function POST(request: NextRequest) {
                     name: teamData.name,
                     conference: 'Unknown',
                     division: 'Unknown',
-                    city: teamData.name.split(' ').slice(0, -1).join(' ')
-                }
+                    city: teamData.name.split(' ').slice(0, -1).join(' '),
+                },
             });
-        });
 
-        // Create a map of teamId to database id
-        const teamMap = new Map(teams.map(team => [team.teamId, team.id]));
-
-        // Upsert stats in batches of 5
-        await processBatch(teamsData, 5, async (teamData) => {
-            const dbTeamId = teamMap.get(teamData.teamId);
-            if (!dbTeamId) return null;
-
-            return prisma.nBATeamStats.upsert({
+            // Upsert season stats
+            await prisma.nBATeamStats.upsert({
                 where: {
                     teamId_season: {
-                        teamId: dbTeamId,
-                        season: season
-                    }
+                        teamId: team.id,
+                        season,
+                    },
                 },
                 update: {
                     gamesPlayed: teamData.gamesPlayed,
@@ -161,17 +137,17 @@ export async function POST(request: NextRequest) {
                     assistsPerGame: teamData.assistsPerGame,
                     reboundsPerGame: teamData.reboundsPerGame,
                     turnoversPerGame: teamData.turnoversPerGame,
-                    oppPointsPerGame: teamData.oppPointsPerGame || 0,
+                    oppPointsPerGame: teamData.oppPointsPerGame ?? 0,
                     oppFieldGoalPct: 0,
                     oppThreePointPct: 0,
                     offensiveRating: teamData.offensiveRating,
                     defensiveRating: teamData.defensiveRating,
                     pace: teamData.pace,
-                    lastUpdated: new Date()
+                    lastUpdated: new Date(),
                 },
                 create: {
-                    teamId: dbTeamId,
-                    season: season,
+                    teamId: team.id,
+                    season,
                     gamesPlayed: teamData.gamesPlayed,
                     wins: teamData.wins,
                     losses: teamData.losses,
@@ -182,15 +158,15 @@ export async function POST(request: NextRequest) {
                     assistsPerGame: teamData.assistsPerGame,
                     reboundsPerGame: teamData.reboundsPerGame,
                     turnoversPerGame: teamData.turnoversPerGame,
-                    oppPointsPerGame: teamData.oppPointsPerGame || 0,
+                    oppPointsPerGame: teamData.oppPointsPerGame ?? 0,
                     oppFieldGoalPct: 0,
                     oppThreePointPct: 0,
                     offensiveRating: teamData.offensiveRating,
                     defensiveRating: teamData.defensiveRating,
-                    pace: teamData.pace
-                }
+                    pace: teamData.pace,
+                },
             });
-        });
+        }
 
         return NextResponse.json({
             success: true,
@@ -204,7 +180,5 @@ export async function POST(request: NextRequest) {
             { error: 'Failed to fetch NBA data' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }
