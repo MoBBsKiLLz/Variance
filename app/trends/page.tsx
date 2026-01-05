@@ -181,7 +181,16 @@ export default function TrendsPage() {
                         : "N/A"
                     }
                     labelFormatter={(label) => `Game ${label}`}
-                    contentStyle={{ fontSize: "12px" }}
+                    contentStyle={{
+                      fontSize: "12px",
+                      backgroundColor: "var(--background)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      color: "var(--foreground)",
+                    }}
+                    labelStyle={{
+                      color: "var(--foreground)",
+                    }}
                   />
                   <Legend wrapperStyle={{ fontSize: "12px" }} />
                   <Line
@@ -237,7 +246,16 @@ export default function TrendsPage() {
                   />
                   <Tooltip
                     labelFormatter={(label) => `Game ${label}`}
-                    contentStyle={{ fontSize: "12px" }}
+                    contentStyle={{
+                      fontSize: "12px",
+                      backgroundColor: "var(--background)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      color: "var(--foreground)",
+                    }}
+                    labelStyle={{
+                      color: "var(--foreground)",
+                    }}
                   />
                   <Legend
                     wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
