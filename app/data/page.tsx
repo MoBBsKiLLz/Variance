@@ -19,6 +19,7 @@ export default function DataPage() {
   const [message, setMessage] = useState<string>("");
   const [isLoadingTeams, setIsLoadingTeams] = useState(false);
   const [isLoadingGames, setIsLoadingGames] = useState(false);
+  const [isLoadingToday, setIsLoadingToday] = useState(false);
 
   const seasons = getSeasonOptions();
 
@@ -86,6 +87,36 @@ export default function DataPage() {
     }
   };
 
+  const handleFetchToday = async () => {
+    setIsLoadingToday(true);
+    setStatus("idle");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/fetch-todays-games", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ season: selectedSeason }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch today's games");
+      }
+
+      setStatus("success");
+      setMessage(`Successfully updated ${data.gamesCount} games for today`);
+    } catch (error) {
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "An error occurred");
+    } finally {
+      setIsLoadingToday(false);
+    }
+  };
+
   return (
     <Card className="p-6 border-t-4 border-accent mb-4">
       <h2 className="text-2xl font-semibold text-foreground mb-6">
@@ -148,7 +179,26 @@ export default function DataPage() {
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Fetch Games
+                Fetch Seasons Games
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleFetchToday}
+            disabled={isLoadingTeams || isLoadingGames || isLoadingToday}
+            className="w-full sm:w-auto sm:min-w-50"
+            variant="secondary"
+          >
+            {isLoadingToday ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating Today...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Fetch Today&apos;s Games
               </>
             )}
           </Button>
@@ -175,11 +225,16 @@ export default function DataPage() {
           <h3 className="font-semibold mb-2">How it works:</h3>
           <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
             <li>Select the NBA season you want to import</li>
-            <li>Click &quot;Fetch Team Stats&quot; to retrieve team statistics</li>
-            <li>Click &quot;Fetch Games&quot; to retrieve game results</li>
             <li>
-              Data includes offensive/defensive ratings, pace, and traditional
-              stats
+              Click &quot;Fetch Team Stats&quot; to retrieve team statistics
+            </li>
+            <li>
+              Click &quot;Fetch Season Games&quot; to retrieve all season games
+              (historical)
+            </li>
+            <li>
+              Click &quot;Fetch Today&apos;s Games&quot; to update today&apos;s
+              scheduled/live games
             </li>
             <li>Previous data for the selected season will be updated</li>
           </ul>

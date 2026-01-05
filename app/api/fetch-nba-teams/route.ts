@@ -1,88 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { NBAStatRow, NBATeamStat, ProcessedTeamData } from '@/lib/types/nba-data';
-import { NBA_HEADERS, NBA_BASE_URL, TEAM_ABBREVIATIONS } from '@/lib/constants/nba';
-
-const teamAbbreviations = TEAM_ABBREVIATIONS as Record<number, string>;
-
-// Import the fetcher - we'll need to convert it to TypeScript or import properly
-async function fetchNBAData(season: string): Promise<ProcessedTeamData[]> {
-    const axios = (await import('axios')).default;
-
-    // Fetch team stats
-    const teamStatsResponse = await axios.get(`${NBA_BASE_URL}/leaguedashteamstats`, {
-        headers: NBA_HEADERS,
-        params: {
-            Conference: '', DateFrom: '', DateTo: '', Division: '', GameScope: '',
-            GameSegment: '', Height: '', LastNGames: 0, LeagueID: '00', Location: '',
-            MeasureType: 'Base', Month: 0, OpponentTeamID: 0, Outcome: '', PORound: 0,
-            PaceAdjust: 'N', PerMode: 'PerGame', Period: 0, PlayerExperience: '',
-            PlayerPosition: '', PlusMinus: 'N', Rank: 'N', Season: season,
-            SeasonSegment: '', SeasonType: 'Regular Season', ShotClockRange: '',
-            StarterBench: '', TeamID: 0, TwoWay: 0, VsConference: '', VsDivision: ''
-        }
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Fetch advanced stats
-    const advancedStatsResponse = await axios.get(`${NBA_BASE_URL}/leaguedashteamstats`, {
-        headers: NBA_HEADERS,
-        params: {
-            Conference: '', DateFrom: '', DateTo: '', Division: '', GameScope: '',
-            GameSegment: '', Height: '', LastNGames: 0, LeagueID: '00', Location: '',
-            MeasureType: 'Advanced', Month: 0, OpponentTeamID: 0, Outcome: '', PORound: 0,
-            PaceAdjust: 'N', PerMode: 'PerGame', Period: 0, PlayerExperience: '',
-            PlayerPosition: '', PlusMinus: 'N', Rank: 'N', Season: season,
-            SeasonSegment: '', SeasonType: 'Regular Season', ShotClockRange: '',
-            StarterBench: '', TeamID: 0, TwoWay: 0, VsConference: '', VsDivision: ''
-        }
-    });
-
-    const headers = teamStatsResponse.data.resultSets[0].headers as string[];
-    const rows = teamStatsResponse.data.resultSets[0].rowSet as NBAStatRow[];
-    const advancedHeaders = advancedStatsResponse.data.resultSets[0].headers as string[];
-    const advancedRows = advancedStatsResponse.data.resultSets[0].rowSet as NBAStatRow[];
-
-    const teamStats = rows.map((row: NBAStatRow): NBATeamStat => {
-        const stats: Record<string, string | number | null> = {};
-        headers.forEach((header: string, index: number) => {
-            stats[header] = row[index] ?? null;
-        });
-        return stats as NBATeamStat;
-    });
-
-    const advancedStats = advancedRows.map((row: NBAStatRow): NBATeamStat => {
-        const stats: Record<string, string | number | null> = {};
-        advancedHeaders.forEach((header: string, index: number) => {
-            stats[header] = row[index] ?? null;
-        });
-        return stats as NBATeamStat;
-    });
-
-    return teamStats.map((team: NBATeamStat): ProcessedTeamData => {
-        const advanced = advancedStats.find((a: NBATeamStat) => a.TEAM_ID === team.TEAM_ID);
-        return {
-            teamId: team.TEAM_ID,
-            abbreviation: teamAbbreviations[team.TEAM_ID] || 'UNK',
-            name: team.TEAM_NAME,
-            gamesPlayed: team.GP,
-            wins: team.W,
-            losses: team.L,
-            pointsPerGame: team.PTS,
-            fieldGoalPct: team.FG_PCT,
-            threePointPct: team.FG3_PCT,
-            freeThrowPct: team.FT_PCT,
-            assistsPerGame: team.AST,
-            reboundsPerGame: team.REB,
-            turnoversPerGame: team.TOV,
-            oppPointsPerGame: null,
-            offensiveRating: advanced?.OFF_RATING || null,
-            defensiveRating: advanced?.DEF_RATING || null,
-            pace: advanced?.PACE || null
-        };
-    });
-}
+import { fetchAllNBAData } from '@/lib/data/nba-fetcher';
 
 export async function POST(request: NextRequest) {
     try {
@@ -95,7 +13,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const teamsData = await fetchNBAData(season);
+        // Use the shared function from nba-fetcher.js
+        const teamsData = await fetchAllNBAData(season);
 
         for (const teamData of teamsData) {
             // Upsert team
@@ -180,5 +99,7 @@ export async function POST(request: NextRequest) {
             { error: 'Failed to fetch NBA data' },
             { status: 500 }
         );
+    } finally {
+        await prisma.$disconnect();
     }
 }

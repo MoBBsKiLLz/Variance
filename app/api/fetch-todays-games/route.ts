@@ -1,26 +1,24 @@
-/**
- * Fetch Today's Games
- * Fetches and stores games for today from the NBA API
- */
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { fetchGamesByDate } from '@/lib/data/nba-games-fetcher';
+import { GameData } from '@/lib/types/nba-data';
 
-import { PrismaClient } from '@prisma/client';
-import { fetchGamesByDate } from '../lib/data/nba-games-fetcher.js';
-
-const prisma = new PrismaClient();
-
-async function fetchTodaysGames() {
+export async function POST(request: NextRequest) {
   try {
+    const { season } = await request.json();
+
     const now = new Date();
-    console.log(`Current local time: ${now.toString()}\n`);
-
-    console.log('Fetching games for today from NBA API...');
-    const games = await fetchGamesByDate(now, '2025-26');
-
-    console.log(`Found ${games.length} games\n`);
+    console.log('Fetching today\'s games from NBA API...');
+    
+    const games = await fetchGamesByDate(now, season);
 
     if (games.length === 0) {
-      console.log('No games found for today');
-      return;
+      return NextResponse.json({
+        success: true,
+        season,
+        gamesCount: 0,
+        message: 'No games found for today'
+      });
     }
 
     // Pre-fetch all teams
@@ -34,24 +32,22 @@ async function fetchTodaysGames() {
     const teamMap = new Map(allTeams.map(team => [team.teamId, team.id]));
 
     // Filter to valid games
-    const validGames = games.filter(game => {
+    const validGames = games.filter((game: GameData) => {
       const homeTeam = teamMap.get(game.homeTeamId);
       const awayTeam = teamMap.get(game.awayTeamId);
       return homeTeam && awayTeam;
     });
 
-    console.log(`Updating ${validGames.length} games in database...\n`);
-
-    // Update games one by one
+    // Update games
     for (const gameData of validGames) {
-      const homeTeamId = teamMap.get(gameData.homeTeamId);
-      const awayTeamId = teamMap.get(gameData.awayTeamId);
+      const homeTeamId = teamMap.get(gameData.homeTeamId)!;
+      const awayTeamId = teamMap.get(gameData.awayTeamId)!;
 
       await prisma.nBAGame.upsert({
         where: { gameId: gameData.gameId },
         update: {
           gameDate: gameData.gameDate,
-          season: '2025-26',
+          season: season,
           homeScore: gameData.homeScore,
           awayScore: gameData.awayScore,
           status: gameData.status
@@ -59,7 +55,7 @@ async function fetchTodaysGames() {
         create: {
           gameId: gameData.gameId,
           gameDate: gameData.gameDate,
-          season: '2025-26',
+          season: season,
           homeTeamId: homeTeamId,
           awayTeamId: awayTeamId,
           homeScore: gameData.homeScore,
@@ -67,17 +63,23 @@ async function fetchTodaysGames() {
           status: gameData.status
         }
       });
-
-      console.log(`✓ Updated game ${gameData.gameId}: ${gameData.gameDate.toISOString()} - ${gameData.status}`);
     }
 
-    console.log(`\n✅ Successfully updated ${validGames.length} games for today`);
+    console.log(`Updated ${validGames.length} games for today`);
+
+    return NextResponse.json({
+      success: true,
+      season,
+      gamesCount: validGames.length
+    });
 
   } catch (error) {
     console.error('Error fetching today\'s games:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch today\'s games' },
+      { status: 500 }
+    );
   } finally {
     await prisma.$disconnect();
   }
 }
-
-fetchTodaysGames();
