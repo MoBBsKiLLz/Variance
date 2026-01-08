@@ -50,6 +50,8 @@ export default function TrendsPage() {
     enabled: !!selectedTeamId,
   });
 
+  console.log("Progression Data:", progression);
+
   const selectedTeam = teams?.find((t) => t.id.toString() === selectedTeamId);
 
   return (
@@ -290,6 +292,7 @@ export default function TrendsPage() {
               <div className="flex gap-2 flex-wrap">
                 {progression
                   .slice(-10)
+                  .reverse()
                   .map((game: ProgressionData, idx: number) => (
                     <div
                       key={idx}
