@@ -51,12 +51,12 @@ export function AppSidebar() {
     setOpenMobile(false);
   };
 
-  // const visibleItems = items.filter((item) => {
-  //   if (item.url === "/data" && process.env.NODE_ENV === "production") {
-  //     return false;
-  //   }
-  //   return true;
-  // });
+  const visibleItems = items.filter((item) => {
+    if (item.url === "/data" && process.env.NODE_ENV === "production") {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <Sidebar collapsible="icon">
@@ -65,7 +65,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>NBA Analytics</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
