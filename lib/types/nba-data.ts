@@ -77,6 +77,18 @@ export function mapRowToTeamStats(row: NBAStatRow): ProcessedTeamData {
   };
 }
 
+// Type returned by fetchSeasonGames (from leaguegamelog endpoint)
+export type SeasonGameData = {
+  gameId: string;
+  gameDate: Date;
+  homeTeamId: number;
+  awayTeamId: number;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: string;
+};
+
+// Type for games with full details (includes season and gameTime from scoreboardV2)
 export type GameData = {
   gameId: string;
   gameDate: Date;

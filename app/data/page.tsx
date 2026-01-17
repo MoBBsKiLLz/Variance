@@ -12,110 +12,39 @@ import {
 import { Card } from "@/components/ui/card";
 import { Loader2, Download, CheckCircle2, AlertCircle } from "lucide-react";
 import { getSeasonOptions } from "@/lib/constants/nba";
+import {
+  useFetchTeams,
+  useFetchGames,
+  useFetchTodaysGames,
+} from "@/hooks/use-fetch-nba-data";
 
+/**
+ * Data Management Page
+ * Allows manual data fetching for teams, games, and today's games
+ * 
+ * Following principles:
+ * - DRY: Reusable custom hooks
+ * - Type Safety: Proper TypeScript types
+ * - Component Organization: Clean, focused component
+ */
 export default function DataPage() {
   const [selectedSeason, setSelectedSeason] = useState<string>("2025-26");
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
-  const [message, setMessage] = useState<string>("");
-  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
-  const [isLoadingGames, setIsLoadingGames] = useState(false);
-  const [isLoadingToday, setIsLoadingToday] = useState(false);
-
   const seasons = getSeasonOptions();
 
-  const handleFetchTeams = async () => {
-    setIsLoadingTeams(true);
-    setStatus("idle");
-    setMessage("");
+  // Custom hooks for data fetching (DRY principle)
+  const teams = useFetchTeams(selectedSeason);
+  const games = useFetchGames(selectedSeason);
+  const todaysGames = useFetchTodaysGames(selectedSeason);
 
-    try {
-      const response = await fetch("/api/fetch-nba-teams", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ season: selectedSeason }),
-      });
+  // Determine which status/message to show (priority: teams > games > today)
+  const activeStatus =
+    teams.status !== "idle"
+      ? teams
+      : games.status !== "idle"
+      ? games
+      : todaysGames;
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch data");
-      }
-
-      setStatus("success");
-      setMessage(
-        `Successfully imported ${data.teamsCount} teams for ${selectedSeason} season`
-      );
-    } catch (error) {
-      setStatus("error");
-      setMessage(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoadingTeams(false);
-    }
-  };
-
-  const handleFetchGames = async () => {
-    setIsLoadingGames(true);
-    setStatus("idle");
-    setMessage("");
-
-    try {
-      const response = await fetch("/api/fetch-nba-games", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ season: selectedSeason }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch games");
-      }
-
-      setStatus("success");
-      setMessage(
-        `Successfully imported ${data.gamesCount} games for ${selectedSeason} season`
-      );
-    } catch (error) {
-      setStatus("error");
-      setMessage(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoadingGames(false);
-    }
-  };
-
-  const handleFetchToday = async () => {
-    setIsLoadingToday(true);
-    setStatus("idle");
-    setMessage("");
-
-    try {
-      const response = await fetch("/api/fetch-todays-games", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ season: selectedSeason }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch today's games");
-      }
-
-      setStatus("success");
-      setMessage(`Successfully updated ${data.gamesCount} games for today`);
-    } catch (error) {
-      setStatus("error");
-      setMessage(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoadingToday(false);
-    }
-  };
+  const isAnyLoading = teams.isLoading || games.isLoading || todaysGames.isLoading;
 
   return (
     <Card className="p-6 border-t-4 border-accent mb-4">
@@ -124,6 +53,7 @@ export default function DataPage() {
       </h2>
 
       <div className="space-y-6">
+        {/* Season Selector */}
         <div>
           <label className="block text-sm font-medium mb-2">
             Select Season
@@ -146,13 +76,14 @@ export default function DataPage() {
           </Select>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
-            onClick={handleFetchTeams}
-            disabled={isLoadingTeams || isLoadingGames}
+            onClick={teams.fetchData}
+            disabled={isAnyLoading}
             className="w-full sm:w-auto sm:min-w-50"
           >
-            {isLoadingTeams ? (
+            {teams.isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Fetching Teams...
@@ -166,12 +97,12 @@ export default function DataPage() {
           </Button>
 
           <Button
-            onClick={handleFetchGames}
-            disabled={isLoadingTeams || isLoadingGames}
+            onClick={games.fetchData}
+            disabled={isAnyLoading}
             className="w-full sm:w-auto sm:min-w-50"
             variant="outline"
           >
-            {isLoadingGames ? (
+            {games.isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Fetching Games...
@@ -179,18 +110,18 @@ export default function DataPage() {
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Fetch Seasons Games
+                Fetch Season Games
               </>
             )}
           </Button>
 
           <Button
-            onClick={handleFetchToday}
-            disabled={isLoadingTeams || isLoadingGames || isLoadingToday}
+            onClick={todaysGames.fetchData}
+            disabled={isAnyLoading}
             className="w-full sm:w-auto sm:min-w-50"
             variant="secondary"
           >
-            {isLoadingToday ? (
+            {todaysGames.isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Updating Today...
@@ -204,23 +135,25 @@ export default function DataPage() {
           </Button>
         </div>
 
-        {status !== "idle" && (
+        {/* Status Message */}
+        {activeStatus.status !== "idle" && (
           <div
             className={`p-4 rounded-lg flex items-start gap-3 ${
-              status === "success"
+              activeStatus.status === "success"
                 ? "bg-green-500/10 text-green-600 dark:text-green-400"
                 : "bg-red-500/10 text-red-600 dark:text-red-400"
             }`}
           >
-            {status === "success" ? (
+            {activeStatus.status === "success" ? (
               <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" />
             ) : (
               <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
             )}
-            <p className="text-sm">{message}</p>
+            <p className="text-sm">{activeStatus.message}</p>
           </div>
         )}
 
+        {/* Instructions */}
         <div className="pt-4 border-t">
           <h3 className="font-semibold mb-2">How it works:</h3>
           <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">

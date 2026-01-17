@@ -1,91 +1,106 @@
+// Optimized Prisma Schema with Natural Keys
+// Allows teams and stats to be upserted in parallel (no dependency!)
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") 
+  url      = env("DATABASE_URL")
 }
 
 // NBA Teams
 model NBATeam {
-  id            Int       @id @default(autoincrement())
-  teamId        Int       @unique // Official NBA team ID
-  abbreviation  String    @unique
-  name          String
-  city          String
-  conference    String
-  division      String
+  id           Int            @id @default(autoincrement())
+  teamId       Int            @unique @map("team_id") // Natural key - used by stats
+  abbreviation String         @unique
+  name         String
+  city         String
+  conference   String
+  division     String
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
   
-  homeGames     NBAGame[] @relation("HomeTeam")
-  awayGames     NBAGame[] @relation("AwayTeam")
-  teamStats     NBATeamStats[]
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  // Relations
+  homeGames    NBAGame[]      @relation("HomeTeam")
+  awayGames    NBAGame[]      @relation("AwayTeam")
+  teamStats    NBATeamStats[]
+
+  // 🚀 PERFORMANCE: Indexes for fast lookups
+  @@index([teamId])
   @@index([abbreviation])
+  @@map("nba_teams")
 }
 
 // NBA Games
 model NBAGame {
-  id                Int       @id @default(autoincrement())
-  gameId            String    @unique // Official NBA game ID
-  gameDate          DateTime
-  season            String    // e.g., "2024-25"
+  id         Int      @id @default(autoincrement())
+  gameId     String   @unique @map("game_id")
+  gameDate   DateTime @map("game_date")
+  season     String
+  homeTeamId Int      @map("home_team_id")
+  awayTeamId Int      @map("away_team_id")
+  homeScore  Int?     @map("home_score")
+  awayScore  Int?     @map("away_score")
+  status     String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
   
-  homeTeamId        Int
-  awayTeamId        Int
-  
-  homeTeam          NBATeam   @relation("HomeTeam", fields: [homeTeamId], references: [id])
-  awayTeam          NBATeam   @relation("AwayTeam", fields: [awayTeamId], references: [id])
-  
-  homeScore         Int?
-  awayScore         Int?
-  
-  status            String    // SCHEDULED, LIVE, FINAL
-  
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  @@index([gameDate])
+  // Relations
+  homeTeam   NBATeam  @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  awayTeam   NBATeam  @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Cascade)
+
+  // 🚀 PERFORMANCE: Indexes for common query patterns
+  @@index([gameId])
   @@index([season])
+  @@index([gameDate])
+  @@index([season, gameDate])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@map("nba_games")
 }
 
 // Team Statistics (aggregated by season)
+// 🔑 KEY CHANGE: Uses nbaTeamId (references NBATeam.teamId) instead of surrogate key
 model NBATeamStats {
-  id                    Int       @id @default(autoincrement())
-  teamId                Int
-  team                  NBATeam   @relation(fields: [teamId], references: [id])
-  
-  season                String
-  gamesPlayed           Int
-  wins                  Int
-  losses                Int
+  id                Int      @id @default(autoincrement())
+  nbaTeamId         Int      @map("nba_team_id") // 🚀 Natural key - no dependency on auto-increment!
+  season            String
+  gamesPlayed       Int      @map("games_played")
+  wins              Int
+  losses            Int
   
   // Offensive Stats
-  pointsPerGame         Float
-  fieldGoalPct          Float
-  threePointPct         Float
-  freeThrowPct          Float
-  assistsPerGame        Float
-  reboundsPerGame       Float
-  turnoversPerGame      Float
+  pointsPerGame     Float    @map("points_per_game")
+  fieldGoalPct      Float    @map("field_goal_pct")
+  threePointPct     Float    @map("three_point_pct")
+  freeThrowPct      Float    @map("free_throw_pct")
+  assistsPerGame    Float    @map("assists_per_game")
+  reboundsPerGame   Float    @map("rebounds_per_game")
+  turnoversPerGame  Float    @map("turnovers_per_game")
   
-  // Defensive Stats  
-  oppPointsPerGame      Float
-  oppFieldGoalPct       Float
-  oppThreePointPct      Float
+  // Defensive Stats
+  oppPointsPerGame  Float    @map("opp_points_per_game")
+  oppFieldGoalPct   Float    @map("opp_field_goal_pct")
+  oppThreePointPct  Float    @map("opp_three_point_pct")
   
   // Advanced Metrics
-  offensiveRating       Float?    // Points per 100 possessions
-  defensiveRating       Float?    // Opponent points per 100 possessions
-  pace                  Float?    // Possessions per 48 minutes
+  offensiveRating   Float?   @map("offensive_rating")
+  defensiveRating   Float?   @map("defensive_rating")
+  pace              Float?
   
   // Meta
-  lastUpdated           DateTime  @default(now())
-  createdAt             DateTime  @default(now())
+  lastUpdated       DateTime @default(now()) @map("last_updated")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
   
-  @@unique([teamId, season])
+  // Relation - references natural key!
+  team              NBATeam  @relation(fields: [nbaTeamId], references: [teamId], onDelete: Cascade)
+
+  // 🚀 PERFORMANCE: Indexes and constraints
+  @@unique([nbaTeamId, season], name: "nbaTeamId_season")
+  @@index([nbaTeamId])
   @@index([season])
+  @@map("nba_team_stats")
 }
