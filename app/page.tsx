@@ -172,7 +172,7 @@ export default function Home() {
                   `(${todaysGames.length})`}
               </h2>
               <span className="text-xs text-muted-foreground">
-                Scores shown when games end • Update data via Manage Data
+                Scores shown when games end • Data is updated daily
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
