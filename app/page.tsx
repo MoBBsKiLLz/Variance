@@ -256,7 +256,7 @@ export default function Home() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Link
-                              href={`/matchup?team1=${game.awayTeam?.id}&team2=${game.homeTeam?.id}&home=team2`}
+                              href={`/matchup?awayTeamId=${game.awayTeam?.id}&homeTeamId=${game.homeTeam?.id}`}
                               className="flex-1"
                             >
                               <Button
