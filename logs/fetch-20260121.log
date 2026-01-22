@@ -1,0 +1,51 @@
+============================================ 
+NBA Data Fetch Started: Wed 01/21/2026  1:00:02.04 
+Season: 2025-26 
+============================================ 
+ 
+[ 1:00:02.07] Fetching teams and stats... 
+
+> variance@1.3.0 fetch:teams
+> tsx scripts/fetch-teams.ts 2025-26
+
+🚀 Fetching NBA team data for season 2025-26...
+[fetchAllNBAData] Starting fetch for 2025-26...
+[teamStats] Attempt 1/4...
+[fetchTeamStats] Got 30 teams
+[advancedStats] Attempt 1/4...
+[fetchAdvancedTeamStats] Got 30 teams
+[fetchAllNBAData] Complete: 30 teams in 6192ms
+✅ NBA API fetch completed in 6192ms
+   📦 [teams] Batch 1: 10 teams
+   📦 [teams] Batch 2: 10 teams
+   📊 [stats] Batch 1: 10 stats
+   📦 [teams] Batch 3: 10 teams
+   📊 [stats] Batch 2: 10 stats
+   📊 [stats] Batch 3: 10 stats
+✅ Database operations completed in 2251ms
+🎉 Total execution time: 8443ms
+✅ Successfully updated 30 teams for 2025-26
+[ 1:00:11.43] Teams fetch completed successfully 
+ 
+[ 1:00:11.44] Fetching season games... 
+
+> variance@1.3.0 fetch:games
+> tsx scripts/fetch-games.ts 2025-26
+
+🏀 Fetching NBA games for season 2025-26...
+🏀 Fetching games for 2025-26 season...
+✅ Fetched 643 games for 2025-26
+✅ Fetched 643 games from NBA API in 288ms
+🔍 Loading teams...
+✅ Loaded 30 teams
+💾 Storing 643 valid games...
+   Deleted 622 existing games
+   Inserted 636 games
+✅ Database operations completed in 1166ms
+🎉 Total execution time: 2362ms
+✅ Successfully stored 636 games for 2025-26
+[ 1:00:14.70] Games fetch completed successfully 
+ 
+============================================ 
+[ 1:00:14.72] All fetches completed successfully! 
+============================================ 

@@ -11,12 +11,11 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "test:db": "node scripts/test-db.js",
-    "fetch:nba": "node scripts/fetch-nba-teams.js",
-    "fetch:nba-games": "node scripts/fetch-nba-games.js",
-    "fetch:today": "node scripts/fetch-todays-games.js",
     "postinstall": "prisma generate",
     "fetch:teams": "tsx scripts/fetch-teams.ts",
-    "fetch:games": "tsx scripts/fetch-games.ts"
+    "fetch:games": "tsx scripts/fetch-games.ts",
+    "fetch:today": "tsx scripts/fetch-todays-games.ts",
+    "fetch:all": "npm run fetch:teams -- %npm_config_season% && npm run fetch:games -- %npm_config_season%"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
