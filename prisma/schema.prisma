@@ -89,6 +89,30 @@ model NBATeamStats {
   offensiveRating   Float?   @map("offensive_rating")
   defensiveRating   Float?   @map("defensive_rating")
   pace              Float?
+
+  // NEW: Pythagorean Expectation Metrics
+  totalPointsScored    Float?   @map("total_points_scored")    // Sum of all points scored
+  totalPointsAllowed   Float?   @map("total_points_allowed")   // Sum of all points allowed
+  pythagoreanWinPct    Float?   @map("pythagorean_win_pct")    // Calculated expectation
+  luckFactor           Float?   @map("luck_factor")            // Actual - Expected
+
+  // NEW: Home/Away Splits
+  homeWins             Int      @default(0) @map("home_wins")
+  homeLosses           Int      @default(0) @map("home_losses")
+  awayWins             Int      @default(0) @map("away_wins")
+  awayLosses           Int      @default(0) @map("away_losses")
+
+  // NEW: Four Factors - Offensive
+  effectiveFGPct       Float?   @map("effective_fg_pct")
+  turnoverPct          Float?   @map("turnover_pct")
+  offensiveReboundPct  Float?   @map("offensive_rebound_pct")
+  freeThrowRate        Float?   @map("free_throw_rate")
+  
+  // NEW: Four Factors - Defensive
+  oppEffectiveFGPct    Float?   @map("opp_effective_fg_pct")
+  oppTurnoverPct       Float?   @map("opp_turnover_pct")
+  oppOffensiveReboundPct Float? @map("opp_offensive_rebound_pct")
+  oppFreeThrowRate     Float?   @map("opp_free_throw_rate")
   
   // Meta
   lastUpdated       DateTime @default(now()) @map("last_updated")

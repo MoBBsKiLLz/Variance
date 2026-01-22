@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { fetchAllNBAData } from '@/lib/data/nba-fetcher';
 import { ProcessedTeamData } from '@/lib/types/nba-data';
 import { Prisma } from '@prisma/client';
+import { calculateTeamAggregates, TeamGameAggregates } from '@/lib/utils/calculate-team-aggregates';
 
 /**
  * ULTRA-OPTIMIZED: Fetch and store NBA team data
@@ -11,7 +12,8 @@ import { Prisma } from '@prisma/client';
  * - Uses PostgreSQL's INSERT ... ON CONFLICT ... RETURNING
  * - Natural keys allow teams and stats to run in parallel
  * - 60 operations → 2 parallel SQL statements
- * - Expected time: 0.8-1.2 seconds
+ * - Now includes Pythagorean expectation and home/away splits
+ * - Expected time: 0.8-1.5 seconds
  */
 
 const BATCH_SIZE = 10; // Process 10 teams per batch
@@ -77,37 +79,51 @@ async function upsertTeamsBatch(teams: ProcessedTeamData[]): Promise<number> {
 }
 
 /**
- * Bulk upsert stats using raw SQL with natural key (no dependency on teams!)
+ * Enhanced stats upsert with Pythagorean and home/away data
  */
 async function upsertStatsBatch(
   teams: ProcessedTeamData[], 
-  season: string
+  season: string,
+  aggregatesMap: Record<number, TeamGameAggregates>
 ): Promise<number> {
   if (teams.length === 0) return 0;
 
-  const statsValues = teams.map((team) => Prisma.sql`(
-    ${team.teamId},
-    ${season},
-    ${team.gamesPlayed},
-    ${team.wins},
-    ${team.losses},
-    ${team.pointsPerGame},
-    ${team.fieldGoalPct},
-    ${team.threePointPct},
-    ${team.freeThrowPct},
-    ${team.assistsPerGame},
-    ${team.reboundsPerGame},
-    ${team.turnoversPerGame},
-    ${team.oppPointsPerGame ?? 0},
-    ${0},
-    ${0},
-    ${team.offensiveRating},
-    ${team.defensiveRating},
-    ${team.pace},
-    NOW(),
-    NOW(),
-    NOW()
-  )`);
+  const statsValues = teams.map((team) => {
+    // Get aggregates for this team (if available)
+    const aggregates = aggregatesMap[team.teamId];
+    
+    return Prisma.sql`(
+      ${team.teamId},
+      ${season},
+      ${team.gamesPlayed},
+      ${team.wins},
+      ${team.losses},
+      ${team.pointsPerGame},
+      ${team.fieldGoalPct},
+      ${team.threePointPct},
+      ${team.freeThrowPct},
+      ${team.assistsPerGame},
+      ${team.reboundsPerGame},
+      ${team.turnoversPerGame},
+      ${team.oppPointsPerGame ?? 0},
+      ${0},
+      ${0},
+      ${team.offensiveRating},
+      ${team.defensiveRating},
+      ${team.pace},
+      ${aggregates?.totalPointsScored ?? (team.pointsPerGame * team.gamesPlayed)},
+      ${aggregates?.totalPointsAllowed ?? ((team.oppPointsPerGame ?? 0) * team.gamesPlayed)},
+      ${aggregates?.pythagoreanWinPct ?? null},
+      ${aggregates?.luckFactor ?? null},
+      ${aggregates?.homeWins ?? 0},
+      ${aggregates?.homeLosses ?? 0},
+      ${aggregates?.awayWins ?? 0},
+      ${aggregates?.awayLosses ?? 0},
+      NOW(),
+      NOW(),
+      NOW()
+    )`;
+  });
 
   await prisma.$queryRaw`
     INSERT INTO "nba_team_stats" (
@@ -116,6 +132,9 @@ async function upsertStatsBatch(
       "assists_per_game", "rebounds_per_game", "turnovers_per_game",
       "opp_points_per_game", "opp_field_goal_pct", "opp_three_point_pct",
       "offensive_rating", "defensive_rating", "pace",
+      "total_points_scored", "total_points_allowed",
+      "pythagorean_win_pct", "luck_factor",
+      "home_wins", "home_losses", "away_wins", "away_losses",
       "last_updated", "created_at", "updated_at"
     )
     VALUES ${Prisma.join(statsValues)}
@@ -134,6 +153,14 @@ async function upsertStatsBatch(
       "offensive_rating" = EXCLUDED."offensive_rating",
       "defensive_rating" = EXCLUDED."defensive_rating",
       "pace" = EXCLUDED."pace",
+      "total_points_scored" = EXCLUDED."total_points_scored",
+      "total_points_allowed" = EXCLUDED."total_points_allowed",
+      "pythagorean_win_pct" = EXCLUDED."pythagorean_win_pct",
+      "luck_factor" = EXCLUDED."luck_factor",
+      "home_wins" = EXCLUDED."home_wins",
+      "home_losses" = EXCLUDED."home_losses",
+      "away_wins" = EXCLUDED."away_wins",
+      "away_losses" = EXCLUDED."away_losses",
       "last_updated" = NOW(),
       "updated_at" = NOW()
   `;
@@ -160,7 +187,14 @@ export async function POST(request: NextRequest) {
     const apiTime = Date.now() - startTime;
     console.log(`✅ [fetch-nba-teams] NBA API fetch completed in ${apiTime}ms`);
 
-    // Step 2: Process teams and stats in PARALLEL batches
+    // Step 2: Calculate Pythagorean expectations and home/away splits from games
+    console.log(`📊 [fetch-nba-teams] Calculating team aggregates from game data...`);
+    const aggregatesStart = Date.now();
+    const teamAggregates = await calculateTeamAggregates(season);
+    const aggregatesTime = Date.now() - aggregatesStart;
+    console.log(`✅ [fetch-nba-teams] Aggregates calculated in ${aggregatesTime}ms`);
+
+    // Step 3: Process teams and stats in PARALLEL batches
     // 🔑 KEY OPTIMIZATION: Natural keys = no dependency = true parallelism!
     const dbStartTime = Date.now();
 
@@ -174,7 +208,7 @@ export async function POST(request: NextRequest) {
       
       // Batch upsert stats (runs in parallel - no ID dependency!)
       processBatches<ProcessedTeamData, number>(teamsData, BATCH_SIZE, async (batch, idx) => {
-        const count = await upsertStatsBatch(batch, season);
+        const count = await upsertStatsBatch(batch, season, teamAggregates);
         console.log(`   📊 [stats] Batch ${idx + 1}: ${count} stats`);
         return count;
       })
@@ -192,6 +226,7 @@ export async function POST(request: NextRequest) {
       teamsCount: teamsData.length,
       performance: {
         apiTimeMs: apiTime,
+        aggregatesTimeMs: aggregatesTime,
         dbTimeMs: dbTime,
         totalTimeMs: totalTime
       }
